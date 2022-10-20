@@ -12,3 +12,22 @@ export function promiseWithTimeout<T>(promise: Promise<T>, timeoutMs: number): P
     }
   });
 }
+
+function promisesSequentiallyWithIndex<T>(
+  promiseCreators: Array<() => Promise<T>>,
+  currentIndex: number,
+): Promise<T[]> {
+  if (currentIndex < promiseCreators.length && currentIndex >= 0) {
+    return promiseCreators[currentIndex]().then((result) =>
+      promisesSequentiallyWithIndex(promiseCreators, currentIndex + 1).then((results) => [
+        result,
+        ...results,
+      ]),
+    );
+  }
+  return Promise.resolve([]);
+}
+
+export function promisesSequentially<T>(promiseCreators: Array<() => Promise<T>>): Promise<T[]> {
+  return promisesSequentiallyWithIndex(promiseCreators, 0);
+}

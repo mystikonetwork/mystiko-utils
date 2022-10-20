@@ -1,4 +1,4 @@
-import { promiseWithTimeout, TimeoutError } from '../src';
+import { promisesSequentially, promiseWithTimeout, TimeoutError } from '../src';
 
 test('test promiseWithTimeout', async () => {
   let timer: NodeJS.Timer | undefined;
@@ -9,4 +9,16 @@ test('test promiseWithTimeout', async () => {
   if (timer) {
     clearTimeout(timer);
   }
+});
+
+test('test promisesSequentially', async () => {
+  const promiseCreators: Array<() => Promise<number>> = [];
+  let results = await promisesSequentially(promiseCreators);
+  expect(results).toStrictEqual([]);
+  const numOfPromises = 5;
+  for (let i = 0; i < numOfPromises; i += 1) {
+    promiseCreators[i] = () => Promise.resolve(i + 1);
+  }
+  results = await promisesSequentially(promiseCreators);
+  expect(results).toStrictEqual([1, 2, 3, 4, 5]);
 });
