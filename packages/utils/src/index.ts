@@ -7,6 +7,7 @@ export * from './bignumber';
 export * from './check';
 export * from './constants';
 export * from './convert';
+export * from './detect';
 export * from './error';
 export * from './files';
 export * from './logger';
