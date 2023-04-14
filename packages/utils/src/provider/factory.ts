@@ -1,3 +1,4 @@
+// eslint-disable-next-line max-classes-per-file
 import { ethers } from 'ethers';
 import { check } from '../check';
 import { ReconnectingWebSocketProvider } from './websocket';
