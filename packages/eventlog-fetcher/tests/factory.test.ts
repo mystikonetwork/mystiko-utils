@@ -20,7 +20,7 @@ describe('test factorys', () => {
     const provider = new ethers.providers.JsonRpcProvider('https://test-provider.com');
     const factory = new ProviderEventLogFetcherFactory();
     const fetcher = factory.create({ provider });
-    expect(fetcher.provider).toBe(provider);
+    expect(fetcher.getProvider()).toBe(provider);
   });
 
   test('test create FailoverEventLogFetcher', async () => {
@@ -30,8 +30,6 @@ describe('test factorys', () => {
     const provider = new ethers.providers.JsonRpcProvider('https://test-provider.com');
     const factory = new FailoverEventLogFetcherFactory();
     const fetcher = factory.create({ chainId, apikey, provider, offset });
-    expect(fetcher.scanApiFetcher.chainId).toBe(chainId);
-    expect(fetcher.scanApiFetcher.offset).toBe(offset);
-    expect(fetcher.providerFetcher.provider).toBe(provider);
+    expect(fetcher.getProvider()).toBe(provider);
   });
 });

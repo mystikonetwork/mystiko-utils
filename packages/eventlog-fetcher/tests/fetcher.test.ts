@@ -4,6 +4,40 @@ import nock from 'nock';
 
 jest.setTimeout(20000);
 
+class TestProvider extends ethers.providers.BaseProvider {
+  constructor(chainId: number, chainName: string, network?: ethers.providers.Network) {
+    super(network || Promise.resolve({ chainId, name: chainName }));
+  }
+
+  public getLogs(): Promise<ethers.providers.Log[]> {
+    const logs: ethers.providers.Log[] = [
+      {
+        blockNumber: 1000,
+        blockHash: '0x111',
+        transactionIndex: 1,
+        removed: true,
+        address: '0x123',
+        data: '0x00000',
+        topics: ['0x111', '0x222'],
+        transactionHash: '0x123',
+        logIndex: 10,
+      },
+      {
+        blockNumber: 2000,
+        blockHash: '0x222',
+        transactionIndex: 2,
+        removed: false,
+        address: '0x456',
+        data: '0x1111',
+        topics: ['0x333', '0x444'],
+        transactionHash: '0x456',
+        logIndex: 20,
+      },
+    ];
+    return Promise.resolve(logs);
+  }
+}
+
 describe('test fetchers', () => {
   const address = '0x111';
   const fromBlock = 10000;
@@ -68,28 +102,34 @@ describe('test fetchers', () => {
     const scanApiEventLogFetcher = new ScanApiEventLogFetcher(1, apikey);
     const events = await scanApiEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0);
     expect(events.length).toEqual(mockedEvents.length);
+    nock.cleanAll();
   });
 
   it('test ProviderEventLogFetcher', async () => {
-    const provider = new ethers.providers.JsonRpcProvider('http://localhost:39737');
-    const providerEventLogFetcher = new ProviderEventLogFetcher(provider);
-    await expect(
-      async () => await providerEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0),
-    ).rejects.toThrow();
+    const address = '0x1234567890';
+    const fromBlock = 0;
+    const toBlock = 100;
+    const topicId = '0x9876543210';
+    const provider = new TestProvider(1, 'chain 1');
+    const fetcher = new ProviderEventLogFetcher(provider);
+    expect(fetcher.getProvider()).toBe(provider);
+    const logs = await fetcher.fetchEventLogs(address, fromBlock, toBlock, topicId);
+    expect(logs.length).toEqual(2);
+    const provider2 = new TestProvider(2, 'chain 2');
+    fetcher.resetProvider(provider2);
+    expect(fetcher.getProvider()).toBe(provider2);
   });
 
   it('test FailoverEventLogFetcher', async () => {
-    const provider = new ethers.providers.JsonRpcProvider('http://localhost:39737');
-    const providerEventLogFetcher = new ProviderEventLogFetcher(provider);
-    await expect(
-      async () => await providerEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0),
-    ).rejects.toThrow();
+    const provider = new TestProvider(1, 'chain 1');
     const failoverEventLogFetcher = new FailoverEventLogFetcher(1, apikey, provider);
     const eventLogs = await failoverEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0);
-    expect(eventLogs.length).toEqual(mockedEvents.length);
+    expect(eventLogs.length).toEqual(2);
     const failoverEventLogFetcher2 = new FailoverEventLogFetcher(56, apikey, provider);
-    await expect(
-      async () => await failoverEventLogFetcher2.fetchEventLogs(address, fromBlock, toBlock, topic0),
-    ).rejects.toThrow();
+    const eventLogs2 = await failoverEventLogFetcher2.fetchEventLogs(address, fromBlock, toBlock, topic0);
+    expect(eventLogs2.length).toEqual(2);
+    const provider2 = new TestProvider(2, 'chain 2');
+    failoverEventLogFetcher.resetProvider(provider2);
+    expect(failoverEventLogFetcher.getProvider()).toBe(provider2);
   });
 });

@@ -59,9 +59,18 @@ export class ScanApiEventLogFetcher implements EventLogFetcher {
 }
 
 export class ProviderEventLogFetcher implements EventLogFetcher {
-  public readonly provider: ethers.providers.BaseProvider;
+  private provider: ethers.providers.BaseProvider;
   constructor(provider: ethers.providers.BaseProvider) {
     this.provider = provider;
+  }
+
+  public resetProvider(provider: ethers.providers.BaseProvider): ProviderEventLogFetcher {
+    this.provider = provider;
+    return this;
+  }
+
+  public getProvider(): ethers.providers.BaseProvider {
+    return this.provider;
   }
 
   async fetchEventLogs(
@@ -84,8 +93,8 @@ export class ProviderEventLogFetcher implements EventLogFetcher {
 }
 
 export class FailoverEventLogFetcher implements EventLogFetcher {
-  public readonly scanApiFetcher: ScanApiEventLogFetcher;
-  public readonly providerFetcher: ProviderEventLogFetcher;
+  private scanApiFetcher: ScanApiEventLogFetcher;
+  private providerFetcher: ProviderEventLogFetcher;
 
   constructor(
     chainId: number,
@@ -95,6 +104,15 @@ export class FailoverEventLogFetcher implements EventLogFetcher {
   ) {
     this.scanApiFetcher = new ScanApiEventLogFetcher(chainId, apiKey, scanApiOffset);
     this.providerFetcher = new ProviderEventLogFetcher(provider);
+  }
+
+  public resetProvider(provider: ethers.providers.BaseProvider): FailoverEventLogFetcher {
+    this.providerFetcher.resetProvider(provider);
+    return this;
+  }
+
+  public getProvider(): ethers.providers.BaseProvider {
+    return this.providerFetcher.getProvider();
   }
 
   async fetchEventLogs(

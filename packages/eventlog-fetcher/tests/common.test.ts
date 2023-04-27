@@ -118,7 +118,6 @@ describe('test common.ts', () => {
     testParams.page = 1;
     const events2 = await httpGetFetchEventLogs(axiosInstance2, testParams);
     expect(events2.length).toEqual(0);
-    nock.cleanAll();
   });
 
   test('test httpGetFetchEventLogs error', async () => {

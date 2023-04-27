@@ -56,9 +56,6 @@ export function createAxiosInstance(baseUrl: string): AxiosInstance {
   const axiosInstance = axios.create({ baseURL: baseUrl });
   axiosInstance.interceptors.response.use(
     function (response: AxiosResponse) {
-      if (!response || response.status != 200) {
-        return Promise.reject(`Scan api request exception, data: ${JSON.stringify(response)}`);
-      }
       if (response.data.status === '1') {
         return Promise.resolve(response.data.result);
       } else {
