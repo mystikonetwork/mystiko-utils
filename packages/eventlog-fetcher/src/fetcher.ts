@@ -43,7 +43,7 @@ export class ScanApiEventLogFetcher implements EventLogFetcher {
     return this.recurFetch(eventLogs, params);
   }
 
-  async recurFetch(
+  private async recurFetch(
     eventLogs: ethers.providers.Log[],
     params: ScanApiEventLogParams,
   ): Promise<ethers.providers.Log[]> {
