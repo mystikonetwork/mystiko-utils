@@ -1,21 +1,21 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import ethers from 'ethers';
 
-export const MAINNET_ETHER_API_BASE_URL = 'https://api.etherscan.io';
+export const DEFAULT_MAINNET_ETHER_API_BASE_URL = 'https://api.etherscan.io';
 
-export const MAINNET_BSC_API_BASE_URL = 'https://api.bscscan.com';
+export const DEFAULT_MAINNET_BSC_API_BASE_URL = 'https://api.bscscan.com';
 
-export const TESTNET_GOERLI_API_BASE_URL = 'https://api-goerli.etherscan.io';
+export const DEFAULT_TESTNET_GOERLI_API_BASE_URL = 'https://api-goerli.etherscan.io';
 
-export const TESTNET_BSC_API_BASE_URL = 'https://api-testnet.bscscan.com';
+export const DEFAULT_TESTNET_BSC_API_BASE_URL = 'https://api-testnet.bscscan.com';
 
-export const TESTNET_POLYGAN_MUMBAI_API_BASE_URL = 'https://api-testnet.polygonscan.com';
+export const DEFAULT_TESTNET_POLYGAN_MUMBAI_API_BASE_URL = 'https://api-testnet.polygonscan.com';
 
-export const TESTNET_AVALANCHE_FUJI_API_BASE_URL = 'https://api.snowtrace.io';
+export const DEFAULT_TESTNET_AVALANCHE_FUJI_API_BASE_URL = 'https://api.snowtrace.io';
 
-export const TESTNET_FANTOM_API_BASE_URL = 'https://api-testnet.ftmscan.com';
+export const DEFAULT_TESTNET_FANTOM_API_BASE_URL = 'https://api-testnet.ftmscan.com';
 
-export const TESTNET_MOONBASE_ALPHA_API_BASE_URL = 'https://api-moonbase.moonscan.io';
+export const DEFAULT_TESTNET_MOONBASE_ALPHA_API_BASE_URL = 'https://api-moonbase.moonscan.io';
 
 export interface ScanApiEventLogParams {
   module: string;
@@ -29,24 +29,24 @@ export interface ScanApiEventLogParams {
   apikey: string;
 }
 
-export function getScanApiBaseUrlByChainId(chainId: number): string {
+export function getDefaultScanApiBaseUrl(chainId: number): string {
   switch (chainId) {
     case 1:
-      return MAINNET_ETHER_API_BASE_URL;
+      return DEFAULT_MAINNET_ETHER_API_BASE_URL;
     case 56:
-      return MAINNET_BSC_API_BASE_URL;
+      return DEFAULT_MAINNET_BSC_API_BASE_URL;
     case 5:
-      return TESTNET_GOERLI_API_BASE_URL;
+      return DEFAULT_TESTNET_GOERLI_API_BASE_URL;
     case 97:
-      return TESTNET_BSC_API_BASE_URL;
+      return DEFAULT_TESTNET_BSC_API_BASE_URL;
     case 80001:
-      return TESTNET_POLYGAN_MUMBAI_API_BASE_URL;
+      return DEFAULT_TESTNET_POLYGAN_MUMBAI_API_BASE_URL;
     case 43113:
-      return TESTNET_AVALANCHE_FUJI_API_BASE_URL;
+      return DEFAULT_TESTNET_AVALANCHE_FUJI_API_BASE_URL;
     case 4002:
-      return TESTNET_FANTOM_API_BASE_URL;
+      return DEFAULT_TESTNET_FANTOM_API_BASE_URL;
     case 1287:
-      return TESTNET_MOONBASE_ALPHA_API_BASE_URL;
+      return DEFAULT_TESTNET_MOONBASE_ALPHA_API_BASE_URL;
     default:
       throw new Error(`Invalid chain id`);
   }

@@ -1,30 +1,30 @@
 import {
-  MAINNET_ETHER_API_BASE_URL,
-  MAINNET_BSC_API_BASE_URL,
-  TESTNET_GOERLI_API_BASE_URL,
-  TESTNET_BSC_API_BASE_URL,
-  TESTNET_POLYGAN_MUMBAI_API_BASE_URL,
-  TESTNET_AVALANCHE_FUJI_API_BASE_URL,
-  TESTNET_FANTOM_API_BASE_URL,
-  TESTNET_MOONBASE_ALPHA_API_BASE_URL,
+  DEFAULT_MAINNET_ETHER_API_BASE_URL,
+  DEFAULT_MAINNET_BSC_API_BASE_URL,
+  DEFAULT_TESTNET_GOERLI_API_BASE_URL,
+  DEFAULT_TESTNET_BSC_API_BASE_URL,
+  DEFAULT_TESTNET_POLYGAN_MUMBAI_API_BASE_URL,
+  DEFAULT_TESTNET_AVALANCHE_FUJI_API_BASE_URL,
+  DEFAULT_TESTNET_FANTOM_API_BASE_URL,
+  DEFAULT_TESTNET_MOONBASE_ALPHA_API_BASE_URL,
   createAxiosInstance,
-  getScanApiBaseUrlByChainId,
+  getDefaultScanApiBaseUrl,
   httpGetFetchEventLogs,
   wrapRequestParams,
 } from '../src';
 import nock from 'nock';
 
 describe('test common.ts', () => {
-  test('test getScanApiBaseUrlByChainId', async () => {
-    expect(getScanApiBaseUrlByChainId(1)).toBe(MAINNET_ETHER_API_BASE_URL);
-    expect(getScanApiBaseUrlByChainId(56)).toBe(MAINNET_BSC_API_BASE_URL);
-    expect(getScanApiBaseUrlByChainId(5)).toBe(TESTNET_GOERLI_API_BASE_URL);
-    expect(getScanApiBaseUrlByChainId(97)).toBe(TESTNET_BSC_API_BASE_URL);
-    expect(getScanApiBaseUrlByChainId(80001)).toBe(TESTNET_POLYGAN_MUMBAI_API_BASE_URL);
-    expect(getScanApiBaseUrlByChainId(43113)).toBe(TESTNET_AVALANCHE_FUJI_API_BASE_URL);
-    expect(getScanApiBaseUrlByChainId(4002)).toBe(TESTNET_FANTOM_API_BASE_URL);
-    expect(getScanApiBaseUrlByChainId(1287)).toBe(TESTNET_MOONBASE_ALPHA_API_BASE_URL);
-    expect(() => getScanApiBaseUrlByChainId(11111111)).toThrow('Invalid chain id');
+  test('test getDefaultScanApiBaseUrl', async () => {
+    expect(getDefaultScanApiBaseUrl(1)).toBe(DEFAULT_MAINNET_ETHER_API_BASE_URL);
+    expect(getDefaultScanApiBaseUrl(56)).toBe(DEFAULT_MAINNET_BSC_API_BASE_URL);
+    expect(getDefaultScanApiBaseUrl(5)).toBe(DEFAULT_TESTNET_GOERLI_API_BASE_URL);
+    expect(getDefaultScanApiBaseUrl(97)).toBe(DEFAULT_TESTNET_BSC_API_BASE_URL);
+    expect(getDefaultScanApiBaseUrl(80001)).toBe(DEFAULT_TESTNET_POLYGAN_MUMBAI_API_BASE_URL);
+    expect(getDefaultScanApiBaseUrl(43113)).toBe(DEFAULT_TESTNET_AVALANCHE_FUJI_API_BASE_URL);
+    expect(getDefaultScanApiBaseUrl(4002)).toBe(DEFAULT_TESTNET_FANTOM_API_BASE_URL);
+    expect(getDefaultScanApiBaseUrl(1287)).toBe(DEFAULT_TESTNET_MOONBASE_ALPHA_API_BASE_URL);
+    expect(() => getDefaultScanApiBaseUrl(11111111)).toThrow('Invalid chain id');
   });
 
   test('test createAxiosInstance', async () => {

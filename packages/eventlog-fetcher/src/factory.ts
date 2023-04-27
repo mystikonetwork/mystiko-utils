@@ -9,6 +9,7 @@ import { ethers } from 'ethers';
 export type ScanApiEventLogFetcherOptions = {
   chainId: number;
   apikey: string;
+  scanApiBaseUrl?: string;
   offset?: number;
 };
 
@@ -26,7 +27,12 @@ export interface EventLogFetcherFactory {
 
 export class ScanApiEventLogFetcherFactory implements EventLogFetcherFactory {
   public create(options: ScanApiEventLogFetcherOptions): ScanApiEventLogFetcher {
-    return new ScanApiEventLogFetcher(options.chainId, options.apikey, options.offset);
+    return new ScanApiEventLogFetcher(
+      options.chainId,
+      options.apikey,
+      options.scanApiBaseUrl,
+      options.offset,
+    );
   }
 }
 
@@ -38,6 +44,12 @@ export class ProviderEventLogFetcherFactory implements EventLogFetcherFactory {
 
 export class FailoverEventLogFetcherFactory implements EventLogFetcherFactory {
   public create(options: FailoverFetcherOptions): FailoverEventLogFetcher {
-    return new FailoverEventLogFetcher(options.chainId, options.apikey, options.provider, options.offset);
+    return new FailoverEventLogFetcher(
+      options.chainId,
+      options.apikey,
+      options.provider,
+      options.scanApiBaseUrl,
+      options.offset,
+    );
   }
 }

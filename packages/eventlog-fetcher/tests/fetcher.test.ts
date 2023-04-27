@@ -1,4 +1,9 @@
-import { FailoverEventLogFetcher, ProviderEventLogFetcher, ScanApiEventLogFetcher } from '../src';
+import {
+  DEFAULT_MAINNET_ETHER_API_BASE_URL,
+  FailoverEventLogFetcher,
+  ProviderEventLogFetcher,
+  ScanApiEventLogFetcher,
+} from '../src';
 import { ethers } from 'ethers';
 import nock from 'nock';
 
@@ -103,6 +108,16 @@ describe('test fetchers', () => {
     const events = await scanApiEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0);
     expect(events.length).toEqual(mockedEvents.length);
     nock.cleanAll();
+  });
+
+  it('test ScanApiEventLogFetcher constructor', async () => {
+    const scanApiEventLogFetcher = new ScanApiEventLogFetcher(1, apikey);
+    expect(scanApiEventLogFetcher.chainId).toEqual(1);
+    expect(scanApiEventLogFetcher.scanApiBaseUrl).toEqual(DEFAULT_MAINNET_ETHER_API_BASE_URL);
+    const test_base_url = 'http://localhost:30123';
+    const scanApiEventLogFetcher2 = new ScanApiEventLogFetcher(56, apikey, test_base_url);
+    expect(scanApiEventLogFetcher2.chainId).toEqual(56);
+    expect(scanApiEventLogFetcher2.scanApiBaseUrl).toEqual(test_base_url);
   });
 
   it('test ProviderEventLogFetcher', async () => {

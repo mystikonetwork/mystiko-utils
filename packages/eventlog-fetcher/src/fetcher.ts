@@ -1,7 +1,7 @@
 import ethers from 'ethers';
 import {
   createAxiosInstance,
-  getScanApiBaseUrlByChainId,
+  getDefaultScanApiBaseUrl,
   httpGetFetchEventLogs,
   ScanApiEventLogParams,
   wrapRequestParams,
@@ -24,11 +24,11 @@ export class ScanApiEventLogFetcher implements EventLogFetcher {
   private readonly apiKey: string;
   private readonly axiosInstance: AxiosInstance;
 
-  constructor(chainId: number, apiKey: string, offset = 1000) {
+  constructor(chainId: number, apiKey: string, scanApiBaseUrl?: string, offset = 1000) {
     this.chainId = chainId;
     this.offset = offset;
     this.apiKey = apiKey;
-    this.scanApiBaseUrl = getScanApiBaseUrlByChainId(this.chainId);
+    this.scanApiBaseUrl = scanApiBaseUrl ? scanApiBaseUrl : getDefaultScanApiBaseUrl(this.chainId);
     this.axiosInstance = createAxiosInstance(this.scanApiBaseUrl);
   }
   async fetchEventLogs(
@@ -100,9 +100,10 @@ export class FailoverEventLogFetcher implements EventLogFetcher {
     chainId: number,
     apiKey: string,
     provider: ethers.providers.BaseProvider,
+    scanApiBaseUrl?: string,
     scanApiOffset?: number,
   ) {
-    this.scanApiFetcher = new ScanApiEventLogFetcher(chainId, apiKey, scanApiOffset);
+    this.scanApiFetcher = new ScanApiEventLogFetcher(chainId, apiKey, scanApiBaseUrl, scanApiOffset);
     this.providerFetcher = new ProviderEventLogFetcher(provider);
   }
 
