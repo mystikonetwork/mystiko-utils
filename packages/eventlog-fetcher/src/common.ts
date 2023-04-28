@@ -11,7 +11,7 @@ export const DEFAULT_TESTNET_BSC_API_BASE_URL = 'https://api-testnet.bscscan.com
 
 export const DEFAULT_TESTNET_POLYGAN_MUMBAI_API_BASE_URL = 'https://api-testnet.polygonscan.com';
 
-export const DEFAULT_TESTNET_AVALANCHE_FUJI_API_BASE_URL = 'https://api.snowtrace.io';
+export const DEFAULT_TESTNET_AVALANCHE_FUJI_API_BASE_URL = 'https://api-testnet.snowtrace.io';
 
 export const DEFAULT_TESTNET_FANTOM_API_BASE_URL = 'https://api-testnet.ftmscan.com';
 
