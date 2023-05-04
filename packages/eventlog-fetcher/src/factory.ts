@@ -4,6 +4,7 @@ import {
   ProviderEventLogFetcher,
   ScanApiEventLogFetcher,
 } from './fetcher';
+import { RetryPolicy } from './retry';
 import { ethers } from 'ethers';
 
 export type ScanApiEventLogFetcherOptions = {
@@ -11,10 +12,12 @@ export type ScanApiEventLogFetcherOptions = {
   apikey: string;
   scanApiBaseUrl?: string;
   offset?: number;
+  maxRequestsPerSecond?: number;
+  retryPolicy?: RetryPolicy;
 };
 
 export type ProviderEventLogFetcherOptions = {
-  provider: ethers.providers.BaseProvider;
+  provider: ethers.providers.Provider;
 };
 
 export type EventLogFetcherOptions = ScanApiEventLogFetcherOptions | ProviderEventLogFetcherOptions;
@@ -32,6 +35,8 @@ export class ScanApiEventLogFetcherFactory implements EventLogFetcherFactory {
       options.apikey,
       options.scanApiBaseUrl,
       options.offset,
+      options.maxRequestsPerSecond,
+      options.retryPolicy,
     );
   }
 }
@@ -50,6 +55,8 @@ export class FailoverEventLogFetcherFactory implements EventLogFetcherFactory {
       options.provider,
       options.scanApiBaseUrl,
       options.offset,
+      options.maxRequestsPerSecond,
+      options.retryPolicy,
     );
   }
 }

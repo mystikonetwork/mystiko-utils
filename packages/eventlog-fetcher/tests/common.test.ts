@@ -140,9 +140,7 @@ describe('test common.ts', () => {
       .query({ module: 'logs', action: 'getLogs', address, fromBlock, toBlock, topic0, page, offset, apikey })
       .reply(200, data);
     const axiosInstance = createAxiosInstance(baseUrl);
-    await expect(async () => await httpGetFetchEventLogs(axiosInstance, testParams)).rejects.toEqual(
-      `Scan api response exception, data: ${JSON.stringify(data)}`,
-    );
+    await expect(async () => await httpGetFetchEventLogs(axiosInstance, testParams)).rejects.toEqual(data);
     nock.cleanAll();
   });
 });
