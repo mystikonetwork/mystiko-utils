@@ -163,6 +163,34 @@ describe('test fetchers', () => {
     await expect(
       async () => await scanApiEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0),
     ).rejects.toEqual(data);
+    // mock http response with delay
+    nock('http://localhost:3333')
+      .get('/api')
+      .delay(500)
+      .times(3)
+      .query({
+        module: 'logs',
+        action: 'getLogs',
+        address,
+        fromBlock,
+        toBlock,
+        topic0,
+        page: page,
+        offset,
+        apikey,
+      })
+      .reply(200, data);
+    const scanApiEventLogFetcher2 = new ScanApiEventLogFetcher({
+      chainId: 1,
+      apikey,
+      scanApiBaseUrl: 'http://localhost:3333',
+      offset: 2,
+      maxRequestsPerSecond: 5,
+      retryPolicy: new DefaultRetryPolicy(2),
+    });
+    await expect(
+      async () => await scanApiEventLogFetcher2.fetchEventLogs(address, fromBlock, toBlock, topic0),
+    ).rejects.toEqual(data);
   });
 
   it('test ProviderEventLogFetcher', async () => {
