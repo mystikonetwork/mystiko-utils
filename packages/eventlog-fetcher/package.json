@@ -64,7 +64,7 @@
     "bn.js": "^5.2.0",
     "config": "^3.3.7",
     "dotenv": "^16.0.0",
-    "ethers": "^5.7.2",
+    "ethers": "^5.5.3",
     "loglevel": "^1.8.0",
     "loglevel-plugin-prefix": "^0.8.4",
     "pako": "^2.0.4"
