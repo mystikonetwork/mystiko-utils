@@ -18,6 +18,21 @@ export interface EventLogFetcher {
   ): Promise<ethers.providers.Log[]>;
 }
 
+export type ScanApiEventLogFetcherOptions = {
+  chainId: number;
+  apikey: string;
+  scanApiBaseUrl?: string;
+  offset?: number;
+  maxRequestsPerSecond?: number;
+  retryPolicy?: RetryPolicy;
+};
+
+export type ProviderEventLogFetcherOptions = {
+  provider: ethers.providers.Provider;
+};
+
+export type FailoverFetcherOptions = ScanApiEventLogFetcherOptions & ProviderEventLogFetcherOptions;
+
 export class ScanApiEventLogFetcher implements EventLogFetcher {
   public readonly chainId: number;
   public readonly offset: number;
@@ -28,21 +43,16 @@ export class ScanApiEventLogFetcher implements EventLogFetcher {
   private lastRequestTime: number | null = null;
   private readonly retryPolicy: RetryPolicy;
 
-  constructor(
-    chainId: number,
-    apiKey: string,
-    scanApiBaseUrl?: string,
-    offset = 1000,
-    maxRequestsPerSecond = 5,
-    retryPolicy?: RetryPolicy,
-  ) {
-    this.chainId = chainId;
-    this.offset = offset;
-    this.apiKey = apiKey;
-    this.scanApiBaseUrl = scanApiBaseUrl ? scanApiBaseUrl : getDefaultScanApiBaseUrl(this.chainId);
+  constructor(options: ScanApiEventLogFetcherOptions) {
+    this.chainId = options.chainId;
+    this.offset = options.offset ? options.offset : 1000;
+    this.apiKey = options.apikey;
+    this.scanApiBaseUrl = options.scanApiBaseUrl
+      ? options.scanApiBaseUrl
+      : getDefaultScanApiBaseUrl(this.chainId);
     this.axiosInstance = createAxiosInstance(this.scanApiBaseUrl);
-    this.maxRequestsPerSecond = maxRequestsPerSecond;
-    this.retryPolicy = retryPolicy ? retryPolicy : new DefaultRetryPolicy();
+    this.maxRequestsPerSecond = options.maxRequestsPerSecond ? options.maxRequestsPerSecond : 5;
+    this.retryPolicy = options.retryPolicy ? options.retryPolicy : new DefaultRetryPolicy();
   }
 
   async fetchEventLogs(
@@ -102,8 +112,8 @@ export class ScanApiEventLogFetcher implements EventLogFetcher {
 
 export class ProviderEventLogFetcher implements EventLogFetcher {
   private provider: ethers.providers.Provider;
-  constructor(provider: ethers.providers.Provider) {
-    this.provider = provider;
+  constructor(options: ProviderEventLogFetcherOptions) {
+    this.provider = options.provider;
   }
 
   public resetProvider(provider: ethers.providers.Provider): ProviderEventLogFetcher {
@@ -138,24 +148,18 @@ export class FailoverEventLogFetcher implements EventLogFetcher {
   private scanApiFetcher: ScanApiEventLogFetcher;
   private providerFetcher: ProviderEventLogFetcher;
 
-  constructor(
-    chainId: number,
-    apiKey: string,
-    provider: ethers.providers.Provider,
-    scanApiBaseUrl?: string,
-    scanApiOffset?: number,
-    maxRequestsPerSecond = 5,
-    retryPolicy?: RetryPolicy,
-  ) {
-    this.scanApiFetcher = new ScanApiEventLogFetcher(
-      chainId,
-      apiKey,
-      scanApiBaseUrl,
-      scanApiOffset,
-      maxRequestsPerSecond,
-      retryPolicy,
-    );
-    this.providerFetcher = new ProviderEventLogFetcher(provider);
+  constructor(options: FailoverFetcherOptions) {
+    this.scanApiFetcher = new ScanApiEventLogFetcher({
+      chainId: options.chainId,
+      apikey: options.apikey,
+      scanApiBaseUrl: options.scanApiBaseUrl,
+      offset: options.offset,
+      maxRequestsPerSecond: options.maxRequestsPerSecond,
+      retryPolicy: options.retryPolicy,
+    });
+    this.providerFetcher = new ProviderEventLogFetcher({
+      provider: options.provider,
+    });
   }
 
   public resetProvider(provider: ethers.providers.Provider): FailoverEventLogFetcher {

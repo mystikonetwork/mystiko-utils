@@ -103,25 +103,31 @@ describe('test fetchers', () => {
         message: 'NO RECORD',
         result: [],
       });
-    const scanApiEventLogFetcher = new ScanApiEventLogFetcher(1, apikey, 'http://localhost:1111', 2);
+    const scanApiEventLogFetcher = new ScanApiEventLogFetcher({
+      chainId: 1,
+      apikey,
+      scanApiBaseUrl: 'http://localhost:1111',
+      offset: 2,
+    });
     const events = await scanApiEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0);
     expect(events.length).toEqual(mockedEvents.length);
   });
 
   it('test ScanApiEventLogFetcher constructor', async () => {
-    const scanApiEventLogFetcher = new ScanApiEventLogFetcher(1, apikey);
+    const scanApiEventLogFetcher = new ScanApiEventLogFetcher({
+      chainId: 1,
+      apikey,
+    });
     expect(scanApiEventLogFetcher.chainId).toEqual(1);
     expect(scanApiEventLogFetcher.scanApiBaseUrl).toEqual(DEFAULT_MAINNET_ETHER_API_BASE_URL);
     const test_base_url = 'http://localhost:30123';
     const retryPolicy = new DefaultRetryPolicy();
-    const scanApiEventLogFetcher2 = new ScanApiEventLogFetcher(
-      56,
+    const scanApiEventLogFetcher2 = new ScanApiEventLogFetcher({
+      chainId: 56,
       apikey,
-      test_base_url,
-      undefined,
-      undefined,
-      retryPolicy,
-    );
+      scanApiBaseUrl: test_base_url,
+      retryPolicy: retryPolicy,
+    });
     expect(scanApiEventLogFetcher2.chainId).toEqual(56);
     expect(scanApiEventLogFetcher2.scanApiBaseUrl).toEqual(test_base_url);
   });
@@ -147,7 +153,13 @@ describe('test fetchers', () => {
         apikey,
       })
       .reply(200, data);
-    const scanApiEventLogFetcher = new ScanApiEventLogFetcher(1, apikey, 'http://localhost:2222', 2, 5);
+    const scanApiEventLogFetcher = new ScanApiEventLogFetcher({
+      chainId: 1,
+      apikey,
+      scanApiBaseUrl: 'http://localhost:2222',
+      offset: 2,
+      maxRequestsPerSecond: 5,
+    });
     await expect(
       async () => await scanApiEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0),
     ).rejects.toEqual(data);
@@ -159,7 +171,7 @@ describe('test fetchers', () => {
     const toBlock = 100;
     const topicId = '0x9876543210';
     const provider = new TestProvider(1, 'chain 1');
-    const fetcher = new ProviderEventLogFetcher(provider);
+    const fetcher = new ProviderEventLogFetcher({ provider });
     expect(fetcher.getProvider()).toBe(provider);
     const logs = await fetcher.fetchEventLogs(address, fromBlock, toBlock, topicId);
     expect(logs.length).toEqual(2);
@@ -185,15 +197,20 @@ describe('test fetchers', () => {
       })
       .reply(200, mockedEvents);
     const provider = new TestProvider(1, 'chain 1');
-    const failoverEventLogFetcher = new FailoverEventLogFetcher(1, apikey, provider, 'http://localhost:3333');
-    const eventLogs = await failoverEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0);
-    expect(eventLogs.length).toEqual(2);
-    const failoverEventLogFetcher2 = new FailoverEventLogFetcher(
-      56,
+    const failoverEventLogFetcher = new FailoverEventLogFetcher({
+      chainId: 1,
       apikey,
       provider,
-      'http://localhost:3333',
-    );
+      scanApiBaseUrl: 'http://localhost:3333',
+    });
+    const eventLogs = await failoverEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0);
+    expect(eventLogs.length).toEqual(2);
+    const failoverEventLogFetcher2 = new FailoverEventLogFetcher({
+      chainId: 56,
+      apikey,
+      provider,
+      scanApiBaseUrl: 'http://localhost:3333',
+    });
     const eventLogs2 = await failoverEventLogFetcher2.fetchEventLogs(address, fromBlock, toBlock, topic0);
     expect(eventLogs2.length).toEqual(2);
     const provider2 = new TestProvider(2, 'chain 2');

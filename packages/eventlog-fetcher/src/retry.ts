@@ -13,7 +13,7 @@ export class DefaultRetryPolicy implements RetryPolicy {
     if (currentRetryTime >= this.maxRetryTimes) {
       return false;
     }
-    if (error && String(error.result).search('rate limit') !== -1) {
+    if (error && String(error.result).toLowerCase().search('rate limit') !== -1) {
       return true;
     }
     return false;
