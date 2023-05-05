@@ -1,5 +1,6 @@
 import {
   DEFAULT_MAINNET_ETHER_API_BASE_URL,
+  DefaultRetryPolicy,
   FailoverEventLogFetcher,
   ProviderEventLogFetcher,
   ScanApiEventLogFetcher,
@@ -48,7 +49,7 @@ describe('test fetchers', () => {
   const fromBlock = 10000;
   const toBlock = 20000;
   const page = 1;
-  const offset = 1000;
+  const offset = 2;
   const apikey = 'SADDA';
   const topic0 = '0xbbb';
   const mockedEvents = [
@@ -75,8 +76,8 @@ describe('test fetchers', () => {
       logIndex: 20,
     },
   ];
-  beforeEach(() => {
-    nock('https://api.etherscan.io')
+  it('test ScanApiEventLogFetcher', async () => {
+    nock('http://localhost:1111')
       .get('/api')
       .query({ module: 'logs', action: 'getLogs', address, fromBlock, toBlock, topic0, page, offset, apikey })
       .reply(200, {
@@ -84,7 +85,7 @@ describe('test fetchers', () => {
         message: 'OK',
         result: mockedEvents,
       });
-    nock('https://api.etherscan.io')
+    nock('http://localhost:1111')
       .get('/api')
       .query({
         module: 'logs',
@@ -102,22 +103,94 @@ describe('test fetchers', () => {
         message: 'NO RECORD',
         result: [],
       });
-  });
-  it('test ScanApiEventLogFetcher', async () => {
-    const scanApiEventLogFetcher = new ScanApiEventLogFetcher(1, apikey);
+    const scanApiEventLogFetcher = new ScanApiEventLogFetcher({
+      chainId: 1,
+      apikey,
+      scanApiBaseUrl: 'http://localhost:1111',
+      offset: 2,
+    });
     const events = await scanApiEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0);
     expect(events.length).toEqual(mockedEvents.length);
-    nock.cleanAll();
   });
 
   it('test ScanApiEventLogFetcher constructor', async () => {
-    const scanApiEventLogFetcher = new ScanApiEventLogFetcher(1, apikey);
+    const scanApiEventLogFetcher = new ScanApiEventLogFetcher({
+      chainId: 1,
+      apikey,
+    });
     expect(scanApiEventLogFetcher.chainId).toEqual(1);
     expect(scanApiEventLogFetcher.scanApiBaseUrl).toEqual(DEFAULT_MAINNET_ETHER_API_BASE_URL);
     const test_base_url = 'http://localhost:30123';
-    const scanApiEventLogFetcher2 = new ScanApiEventLogFetcher(56, apikey, test_base_url);
+    const retryPolicy = new DefaultRetryPolicy();
+    const scanApiEventLogFetcher2 = new ScanApiEventLogFetcher({
+      chainId: 56,
+      apikey,
+      scanApiBaseUrl: test_base_url,
+      retryPolicy: retryPolicy,
+    });
     expect(scanApiEventLogFetcher2.chainId).toEqual(56);
     expect(scanApiEventLogFetcher2.scanApiBaseUrl).toEqual(test_base_url);
+  });
+
+  it('test ScanApiEventLogFetcher retry', async () => {
+    const data = {
+      status: '0',
+      message: 'NO RECORD',
+      result: 'Max rate limit reached, please use API Key for higher rate limit',
+    };
+    nock('http://localhost:2222')
+      .get('/api')
+      .times(12)
+      .query({
+        module: 'logs',
+        action: 'getLogs',
+        address,
+        fromBlock,
+        toBlock,
+        topic0,
+        page: page,
+        offset,
+        apikey,
+      })
+      .reply(200, data);
+    const scanApiEventLogFetcher = new ScanApiEventLogFetcher({
+      chainId: 1,
+      apikey,
+      scanApiBaseUrl: 'http://localhost:2222',
+      offset: 2,
+      maxRequestsPerSecond: 5,
+    });
+    await expect(
+      async () => await scanApiEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0),
+    ).rejects.toEqual(data);
+    // mock http response with delay
+    nock('http://localhost:3333')
+      .get('/api')
+      .delay(500)
+      .times(3)
+      .query({
+        module: 'logs',
+        action: 'getLogs',
+        address,
+        fromBlock,
+        toBlock,
+        topic0,
+        page: page,
+        offset,
+        apikey,
+      })
+      .reply(200, data);
+    const scanApiEventLogFetcher2 = new ScanApiEventLogFetcher({
+      chainId: 1,
+      apikey,
+      scanApiBaseUrl: 'http://localhost:3333',
+      offset: 2,
+      maxRequestsPerSecond: 5,
+      retryPolicy: new DefaultRetryPolicy(2),
+    });
+    await expect(
+      async () => await scanApiEventLogFetcher2.fetchEventLogs(address, fromBlock, toBlock, topic0),
+    ).rejects.toEqual(data);
   });
 
   it('test ProviderEventLogFetcher', async () => {
@@ -126,7 +199,7 @@ describe('test fetchers', () => {
     const toBlock = 100;
     const topicId = '0x9876543210';
     const provider = new TestProvider(1, 'chain 1');
-    const fetcher = new ProviderEventLogFetcher(provider);
+    const fetcher = new ProviderEventLogFetcher({ provider });
     expect(fetcher.getProvider()).toBe(provider);
     const logs = await fetcher.fetchEventLogs(address, fromBlock, toBlock, topicId);
     expect(logs.length).toEqual(2);
@@ -136,11 +209,36 @@ describe('test fetchers', () => {
   });
 
   it('test FailoverEventLogFetcher', async () => {
+    nock('http://localhost:3333')
+      .get('/api')
+      .times(3)
+      .query({
+        module: 'logs',
+        action: 'getLogs',
+        address,
+        fromBlock,
+        toBlock,
+        topic0,
+        page: page,
+        offset,
+        apikey,
+      })
+      .reply(200, mockedEvents);
     const provider = new TestProvider(1, 'chain 1');
-    const failoverEventLogFetcher = new FailoverEventLogFetcher(1, apikey, provider);
+    const failoverEventLogFetcher = new FailoverEventLogFetcher({
+      chainId: 1,
+      apikey,
+      provider,
+      scanApiBaseUrl: 'http://localhost:3333',
+    });
     const eventLogs = await failoverEventLogFetcher.fetchEventLogs(address, fromBlock, toBlock, topic0);
     expect(eventLogs.length).toEqual(2);
-    const failoverEventLogFetcher2 = new FailoverEventLogFetcher(56, apikey, provider);
+    const failoverEventLogFetcher2 = new FailoverEventLogFetcher({
+      chainId: 56,
+      apikey,
+      provider,
+      scanApiBaseUrl: 'http://localhost:3333',
+    });
     const eventLogs2 = await failoverEventLogFetcher2.fetchEventLogs(address, fromBlock, toBlock, topic0);
     expect(eventLogs2.length).toEqual(2);
     const provider2 = new TestProvider(2, 'chain 2');

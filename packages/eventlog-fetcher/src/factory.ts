@@ -1,25 +1,14 @@
 import {
   EventLogFetcher,
   FailoverEventLogFetcher,
+  FailoverFetcherOptions,
   ProviderEventLogFetcher,
+  ProviderEventLogFetcherOptions,
   ScanApiEventLogFetcher,
+  ScanApiEventLogFetcherOptions,
 } from './fetcher';
-import { ethers } from 'ethers';
-
-export type ScanApiEventLogFetcherOptions = {
-  chainId: number;
-  apikey: string;
-  scanApiBaseUrl?: string;
-  offset?: number;
-};
-
-export type ProviderEventLogFetcherOptions = {
-  provider: ethers.providers.BaseProvider;
-};
 
 export type EventLogFetcherOptions = ScanApiEventLogFetcherOptions | ProviderEventLogFetcherOptions;
-
-export type FailoverFetcherOptions = ScanApiEventLogFetcherOptions & ProviderEventLogFetcherOptions;
 
 export interface EventLogFetcherFactory {
   create(options: EventLogFetcherOptions): EventLogFetcher;
@@ -27,29 +16,35 @@ export interface EventLogFetcherFactory {
 
 export class ScanApiEventLogFetcherFactory implements EventLogFetcherFactory {
   public create(options: ScanApiEventLogFetcherOptions): ScanApiEventLogFetcher {
-    return new ScanApiEventLogFetcher(
-      options.chainId,
-      options.apikey,
-      options.scanApiBaseUrl,
-      options.offset,
-    );
+    return new ScanApiEventLogFetcher({
+      chainId: options.chainId,
+      apikey: options.apikey,
+      scanApiBaseUrl: options.scanApiBaseUrl,
+      offset: options.offset,
+      maxRequestsPerSecond: options.maxRequestsPerSecond,
+      retryPolicy: options.retryPolicy,
+    });
   }
 }
 
 export class ProviderEventLogFetcherFactory implements EventLogFetcherFactory {
   public create(options: ProviderEventLogFetcherOptions): ProviderEventLogFetcher {
-    return new ProviderEventLogFetcher(options.provider);
+    return new ProviderEventLogFetcher({
+      provider: options.provider,
+    });
   }
 }
 
 export class FailoverEventLogFetcherFactory implements EventLogFetcherFactory {
   public create(options: FailoverFetcherOptions): FailoverEventLogFetcher {
-    return new FailoverEventLogFetcher(
-      options.chainId,
-      options.apikey,
-      options.provider,
-      options.scanApiBaseUrl,
-      options.offset,
-    );
+    return new FailoverEventLogFetcher({
+      chainId: options.chainId,
+      apikey: options.apikey,
+      scanApiBaseUrl: options.scanApiBaseUrl,
+      offset: options.offset,
+      maxRequestsPerSecond: options.maxRequestsPerSecond,
+      retryPolicy: options.retryPolicy,
+      provider: options.provider,
+    });
   }
 }

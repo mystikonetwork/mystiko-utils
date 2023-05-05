@@ -62,7 +62,7 @@ export function createAxiosInstance(baseUrl: string): AxiosInstance {
         if (response.data.result instanceof Array) {
           return Promise.resolve(response.data.result);
         } else {
-          return Promise.reject(`Scan api response exception, data: ${JSON.stringify(response.data)}`);
+          return Promise.reject(response.data);
         }
       }
     },
