@@ -1,14 +1,14 @@
 {
-  "name": "@mystikonetwork/eventlog-fetcher",
-  "version": "0.2.1",
-  "description": "Mystiko event logs fetcher",
+  "name": "@mystikonetwork/ether-fetcher",
+  "version": "0.2.2",
+  "description": "Mystiko ether fetcher",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",
   "types": "build/cjs/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/mystikonetwork/mystiko-utils",
-    "directory": "packages/eventlog-fetcher"
+    "directory": "packages/ether-fetcher"
   },
   "author": {
     "name": "Mystiko Network"

@@ -9,7 +9,9 @@ import {
   DEFAULT_TESTNET_MOONBASE_ALPHA_API_BASE_URL,
   createAxiosInstance,
   getDefaultScanApiBaseUrl,
+  httpGetEtherProxy,
   httpGetFetchEventLogs,
+  wrapParamsQueryString,
   wrapRequestParams,
 } from '../src';
 import nock from 'nock';
@@ -142,5 +144,34 @@ describe('test common.ts', () => {
     const axiosInstance = createAxiosInstance(baseUrl);
     await expect(async () => await httpGetFetchEventLogs(axiosInstance, testParams)).rejects.toEqual(data);
     nock.cleanAll();
+  });
+
+  test('test wrapParamsQueryString', async () => {
+    const map = new Map<string, any>();
+    map.set('action', 'eth_call');
+    map.set('module', 'proxy');
+    const queryString = wrapParamsQueryString(map);
+    expect('action=eth_call&module=proxy').toEqual(queryString);
+  });
+
+  test('test httpGetEtherProxy', async () => {
+    const map = new Map<string, any>();
+    map.set('action', 'eth_call');
+    map.set('module', 'proxy');
+    const mockedSuccessResp = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: '0x00000000000000000000000000000000000000000000000000601d8888141c00',
+    };
+    nock('http://mock-test.com')
+      .get('/api')
+      .query({
+        action: 'eth_call',
+        module: 'proxy',
+      })
+      .reply(200, mockedSuccessResp);
+    const axiosInstance = createAxiosInstance('http://mock-test.com');
+    const resp = await httpGetEtherProxy(axiosInstance, map);
+    expect(resp).toEqual(mockedSuccessResp.result);
   });
 });

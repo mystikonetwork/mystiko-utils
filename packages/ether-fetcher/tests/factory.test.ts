@@ -1,17 +1,17 @@
 import {
   DEFAULT_MAINNET_BSC_API_BASE_URL,
-  FailoverEventLogFetcherFactory,
-  ProviderEventLogFetcherFactory,
-  ScanApiEventLogFetcherFactory,
+  FailoverEtherFetcherFactory,
+  ProviderEtherFetcherFactory,
+  ScanApiEtherFetcherFactory,
 } from '../src';
 import { ethers } from 'ethers';
 
 describe('test factorys', () => {
-  test('test create ScanApiEventLogFetcher', async () => {
+  test('test create ScanApiEtherFetcher', async () => {
     const chainId = 56;
     const apikey = 'TEST_API_KEY';
     const offset = 1000;
-    const factory = new ScanApiEventLogFetcherFactory();
+    const factory = new ScanApiEtherFetcherFactory();
     const fetcher = factory.create({ chainId, apikey, offset });
     expect(fetcher.scanApiBaseUrl).toBe(DEFAULT_MAINNET_BSC_API_BASE_URL);
     expect(fetcher.chainId).toBe(chainId);
@@ -23,19 +23,19 @@ describe('test factorys', () => {
     expect(fetcher2.offset).toBe(offset);
   });
 
-  test('test create ProviderEventLogFetcher', async () => {
+  test('test create ProviderEtherFetcher', async () => {
     const provider = new ethers.providers.JsonRpcProvider('https://test-provider.com');
-    const factory = new ProviderEventLogFetcherFactory();
+    const factory = new ProviderEtherFetcherFactory();
     const fetcher = factory.create({ provider });
     expect(fetcher.getProvider()).toBe(provider);
   });
 
-  test('test create FailoverEventLogFetcher', async () => {
+  test('test create FailoverEtherFetcher', async () => {
     const chainId = 56;
     const apikey = 'TEST_API_KEY';
     const offset = 1000;
     const provider = new ethers.providers.JsonRpcProvider('https://test-provider.com');
-    const factory = new FailoverEventLogFetcherFactory();
+    const factory = new FailoverEtherFetcherFactory();
     const fetcher = factory.create({ chainId, apikey, provider, offset });
     expect(fetcher.getProvider()).toBe(provider);
   });
