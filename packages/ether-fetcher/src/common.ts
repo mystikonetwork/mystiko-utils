@@ -56,13 +56,17 @@ export function createAxiosInstance(baseUrl: string): AxiosInstance {
   const axiosInstance = axios.create({ baseURL: baseUrl });
   axiosInstance.interceptors.response.use(
     function (response: AxiosResponse) {
-      if (response.data.status === '1') {
-        return Promise.resolve(response.data.result);
+      const respData = response.data;
+      if (!respData.status) {
+        return Promise.resolve(respData.result);
+      }
+      if (respData.status === '1') {
+        return Promise.resolve(respData.result);
       } else {
-        if (response.data.result instanceof Array) {
-          return Promise.resolve(response.data.result);
+        if (respData.result instanceof Array) {
+          return Promise.resolve(respData.result);
         } else {
-          return Promise.reject(response.data);
+          return Promise.reject(respData);
         }
       }
     },
@@ -102,4 +106,20 @@ export async function httpGetFetchEventLogs(
   return axios.get<any, ethers.providers.Log[]>('/api', { params }).then((events: ethers.providers.Log[]) => {
     return events;
   });
+}
+
+export async function httpGetEtherProxy(axios: AxiosInstance, paramsMap: Map<string, any>): Promise<any> {
+  paramsMap.set('module', 'proxy');
+  const queryString = wrapParamsQueryString(paramsMap);
+  return axios.get(`/api?${queryString}`).then((resp) => {
+    return resp;
+  });
+}
+
+export function wrapParamsQueryString(paramsMap: Map<string, any>): string {
+  const params: string[] = [];
+  paramsMap.forEach((value, key) => {
+    params.push(`${key}=${encodeURIComponent(value)}`);
+  });
+  return params.join('&');
 }
