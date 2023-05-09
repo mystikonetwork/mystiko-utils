@@ -73,6 +73,10 @@ class TestProvider extends ethers.providers.BaseProvider {
       status: '0x1',
     });
   }
+
+  public async call(request: ethers.providers.TransactionRequest): Promise<any> {
+    return Promise.resolve(request.to);
+  }
 }
 
 describe('test fetchers', () => {
@@ -164,6 +168,22 @@ describe('test fetchers', () => {
     },
   };
 
+  const ethCallParams = new Map<string, any>();
+  const to = '0x111';
+  const functionEncodedData = '0x11AC';
+  ethCallParams.set('action', 'eth_call');
+  ethCallParams.set('apikey', apikey);
+  ethCallParams.set('module', 'proxy');
+  ethCallParams.set('to', to);
+  ethCallParams.set('data', functionEncodedData);
+  ethCallParams.set('tag', 'latest');
+  const ethCallQueryString = wrapParamsQueryString(ethCallParams);
+  const mockedEthCallResp = {
+    jsonrpc: '2.0',
+    id: 1,
+    result: '0x0000001',
+  };
+
   it('test ScanApiEtherFetcher', async () => {
     nock('http://localhost:1111')
       .get('/api')
@@ -225,6 +245,10 @@ describe('test fetchers', () => {
       .reply(200, mockedTransactionReceiptResp);
     const transactionReceiptResp = await scanApiEtherFetcher.getTransactionReceipt('0x111');
     expect(transactionReceiptResp).toEqual(mockedTransactionReceiptResp.result);
+    // test ethCall
+    nock('http://localhost:1111').get(`/api?${ethCallQueryString}`).reply(200, mockedEthCallResp);
+    const ethCallResp = await scanApiEtherFetcher.ethCall(to, functionEncodedData, 'latest');
+    expect(ethCallResp).toEqual(mockedEthCallResp.result);
   });
 
   it('test ScanApiEtherFetcher constructor', async () => {
@@ -339,6 +363,8 @@ describe('test fetchers', () => {
     expect(transaction.hash).toEqual('0x111');
     const transactionReceipt = await fetcher.getTransactionReceipt('0x111');
     expect(transactionReceipt.transactionHash).toEqual('0x111');
+    const ethCallResp = await fetcher.ethCall(to, functionEncodedData, 'latest');
+    expect(ethCallResp).toEqual(to);
   });
 
   it('test FailoverEtherFetcher', async () => {
@@ -359,7 +385,6 @@ describe('test fetchers', () => {
       .reply(200, mockedEvents);
     nock('http://localhost:3333')
       .get(`/api?${getBlocknumberQueryString}`)
-      .times(2)
       .reply(200, {
         jsonrpc: '2.0',
         id: 83,
@@ -372,7 +397,7 @@ describe('test fetchers', () => {
     nock('http://localhost:3333')
       .get(`/api?${getTransactionReceiptQueryString}`)
       .reply(200, mockedTransactionReceiptResp);
-
+    nock('http://localhost:3333').get(`/api?${ethCallQueryString}`).reply(200, mockedEthCallResp);
     const provider = new TestProvider(1, 'chain 1');
     const failoverEtherFetcher = new FailoverEtherFetcher({
       chainId: 1,
@@ -390,8 +415,8 @@ describe('test fetchers', () => {
     expect(transactionResp).toEqual(mockedTransactionResp.result);
     let transactionReceiptResp = await failoverEtherFetcher.getTransactionReceipt('0x111');
     expect(transactionReceiptResp).toEqual(mockedTransactionReceiptResp.result);
-    const ethCallResp = await failoverEtherFetcher.ethCallProxy(getBlockNumberParams);
-    expect(ethCallResp).toEqual(BigNumber.from(mockedBlockNumber).toHexString());
+    let ethCallResp = await failoverEtherFetcher.ethCall(to, functionEncodedData, 'latest');
+    expect(ethCallResp).toEqual(mockedEthCallResp.result);
     // test scan api error and failover to provder
     const failoverEtherFetcher2 = new FailoverEtherFetcher({
       chainId: 56,
@@ -409,6 +434,10 @@ describe('test fetchers', () => {
     expect(transactionResp.hash).toEqual('0x111');
     transactionReceiptResp = await failoverEtherFetcher2.getTransactionReceipt('0x111');
     expect(transactionReceiptResp.transactionHash).toEqual('0x111');
+    ethCallResp = await failoverEtherFetcher2.ethCall(to, functionEncodedData);
+    expect(ethCallResp).toEqual(to);
+    ethCallResp = await failoverEtherFetcher2.ethCall(to, functionEncodedData, 'latest');
+    expect(ethCallResp).toEqual(to);
     const provider2 = new TestProvider(2, 'chain 2');
     failoverEtherFetcher.resetProvider(provider2);
     expect(failoverEtherFetcher.getProvider()).toBe(provider2);

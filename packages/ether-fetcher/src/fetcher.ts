@@ -18,6 +18,8 @@ export interface EtherFetcher {
     topicId: string,
   ): Promise<ethers.providers.Log[]>;
 
+  ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any>;
+
   getBlockNumber(): Promise<number>;
 
   getBlockByNumber(blockNumber: number): Promise<ethers.providers.Block>;
@@ -64,14 +66,14 @@ export class ScanApiEtherFetcher implements EtherFetcher {
     this.retryPolicy = options.retryPolicy ? options.retryPolicy : new DefaultRetryPolicy();
   }
 
-  public async ethCallProxy(paramsMap: Map<string, any>): Promise<any> {
+  public async jsonRpcProxy(paramsMap: Map<string, any>): Promise<any> {
     const currentRetryTime = 0;
-    return this.ethCallProxyWithRetry(currentRetryTime, paramsMap).then((resp: any) => {
+    return this.jsonRpcProxyWithRetry(currentRetryTime, paramsMap).then((resp: any) => {
       return resp;
     });
   }
 
-  private async ethCallProxyWithRetry(currentRetryTime: number, paramsMap: Map<string, any>): Promise<any> {
+  private async jsonRpcProxyWithRetry(currentRetryTime: number, paramsMap: Map<string, any>): Promise<any> {
     await this.throttle();
     return httpGetEtherProxy(this.axiosInstance, paramsMap)
       .then((response: any) => {
@@ -79,17 +81,27 @@ export class ScanApiEtherFetcher implements EtherFetcher {
       })
       .catch((error: any) => {
         if (this.retryPolicy.isRetryable(error, currentRetryTime)) {
-          return this.ethCallProxyWithRetry(currentRetryTime + 1, paramsMap);
+          return this.jsonRpcProxyWithRetry(currentRetryTime + 1, paramsMap);
         }
         return Promise.reject(error);
       });
+  }
+
+  public async ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any> {
+    const paramsMap = new Map();
+    paramsMap.set('action', 'eth_call');
+    paramsMap.set('to', to);
+    paramsMap.set('data', functionEncodedData);
+    paramsMap.set('tag', blockTag ? blockTag : 'latest');
+    paramsMap.set('apikey', this.apiKey);
+    return this.jsonRpcProxy(paramsMap);
   }
 
   public async getBlockNumber(): Promise<number> {
     const paramsMap = new Map();
     paramsMap.set('action', 'eth_blockNumber');
     paramsMap.set('apikey', this.apiKey);
-    return this.ethCallProxy(paramsMap).then((blockNumber: number) => {
+    return this.jsonRpcProxy(paramsMap).then((blockNumber: number) => {
       return BigNumber.from(blockNumber).toNumber();
     });
   }
@@ -100,7 +112,7 @@ export class ScanApiEtherFetcher implements EtherFetcher {
     paramsMap.set('apikey', this.apiKey);
     paramsMap.set('tag', ethers.utils.hexValue(blockNumber));
     paramsMap.set('boolean', false);
-    return this.ethCallProxy(paramsMap).then((block: ethers.providers.Block) => {
+    return this.jsonRpcProxy(paramsMap).then((block: ethers.providers.Block) => {
       return block;
     });
   }
@@ -110,7 +122,7 @@ export class ScanApiEtherFetcher implements EtherFetcher {
     paramsMap.set('action', 'eth_getTransactionByHash');
     paramsMap.set('apikey', this.apiKey);
     paramsMap.set('txhash', transactionHash);
-    return this.ethCallProxy(paramsMap).then((txResponse: ethers.providers.TransactionResponse) => {
+    return this.jsonRpcProxy(paramsMap).then((txResponse: ethers.providers.TransactionResponse) => {
       return txResponse;
     });
   }
@@ -120,7 +132,7 @@ export class ScanApiEtherFetcher implements EtherFetcher {
     paramsMap.set('action', 'eth_getTransactionReceipt');
     paramsMap.set('apikey', this.apiKey);
     paramsMap.set('txhash', transactionHash);
-    return this.ethCallProxy(paramsMap).then((txReceipt: ethers.providers.TransactionReceipt) => {
+    return this.jsonRpcProxy(paramsMap).then((txReceipt: ethers.providers.TransactionReceipt) => {
       return txReceipt;
     });
   }
@@ -184,6 +196,16 @@ export class ProviderEtherFetcher implements EtherFetcher {
   private provider: ethers.providers.Provider;
   constructor(options: ProviderEtherFetcherOptions) {
     this.provider = options.provider;
+  }
+
+  public async ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any> {
+    return this.provider.call(
+      {
+        to: to,
+        data: functionEncodedData,
+      },
+      blockTag ? blockTag : 'latest',
+    );
   }
 
   public async getBlockNumber(): Promise<number> {
@@ -301,7 +323,9 @@ export class FailoverEtherFetcher implements EtherFetcher {
     });
   }
 
-  public async ethCallProxy(paramsMap: Map<string, any>): Promise<any> {
-    return this.scanApiFetcher.ethCallProxy(paramsMap);
+  public async ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any> {
+    return this.scanApiFetcher.ethCall(to, functionEncodedData, blockTag).catch(() => {
+      return this.providerFetcher.ethCall(to, functionEncodedData, blockTag);
+    });
   }
 }
