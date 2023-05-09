@@ -359,6 +359,7 @@ describe('test fetchers', () => {
       .reply(200, mockedEvents);
     nock('http://localhost:3333')
       .get(`/api?${getBlocknumberQueryString}`)
+      .times(2)
       .reply(200, {
         jsonrpc: '2.0',
         id: 83,
@@ -389,6 +390,8 @@ describe('test fetchers', () => {
     expect(transactionResp).toEqual(mockedTransactionResp.result);
     let transactionReceiptResp = await failoverEtherFetcher.getTransactionReceipt('0x111');
     expect(transactionReceiptResp).toEqual(mockedTransactionReceiptResp.result);
+    const ethCallResp = await failoverEtherFetcher.ethCallProxy(getBlockNumberParams);
+    expect(ethCallResp).toEqual(BigNumber.from(mockedBlockNumber).toHexString());
     // test scan api error and failover to provder
     const failoverEtherFetcher2 = new FailoverEtherFetcher({
       chainId: 56,

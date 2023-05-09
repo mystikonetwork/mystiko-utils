@@ -300,4 +300,8 @@ export class FailoverEtherFetcher implements EtherFetcher {
       return this.providerFetcher.fetchEventLogs(address, fromBlock, toBlock, topicId);
     });
   }
+
+  public async ethCallProxy(paramsMap: Map<string, any>): Promise<any> {
+    return this.scanApiFetcher.ethCallProxy(paramsMap);
+  }
 }
