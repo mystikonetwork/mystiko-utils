@@ -1,6 +1,6 @@
 {
   "name": "@mystikonetwork/ether-fetcher",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Mystiko ether fetcher",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",
