@@ -1,6 +1,7 @@
 import {
   DEFAULT_MAINNET_ETHER_API_BASE_URL,
   DefaultRetryPolicy,
+  EtherFetcherType,
   FailoverEtherFetcher,
   ProviderEtherFetcher,
   ScanApiEtherFetcher,
@@ -249,6 +250,8 @@ describe('test fetchers', () => {
     nock('http://localhost:1111').get(`/api?${ethCallQueryString}`).reply(200, mockedEthCallResp);
     const ethCallResp = await scanApiEtherFetcher.ethCall(to, functionEncodedData, 'latest');
     expect(ethCallResp).toEqual(mockedEthCallResp.result);
+    // test getType
+    expect(scanApiEtherFetcher.getType()).toEqual(EtherFetcherType.ScanApi);
   });
 
   it('test ScanApiEtherFetcher constructor', async () => {
@@ -365,6 +368,8 @@ describe('test fetchers', () => {
     expect(transactionReceipt.transactionHash).toEqual('0x111');
     const ethCallResp = await fetcher.ethCall(to, functionEncodedData, 'latest');
     expect(ethCallResp).toEqual(to);
+    // test getType
+    expect(fetcher.getType()).toEqual(EtherFetcherType.Provider);
   });
 
   it('test FailoverEtherFetcher', async () => {
@@ -421,6 +426,8 @@ describe('test fetchers', () => {
     expect(transactionReceiptResp).toEqual(mockedTransactionReceiptResp.result);
     let ethCallResp = await failoverEtherFetcher.ethCall(to, functionEncodedData, 'latest');
     expect(ethCallResp).toEqual(mockedEthCallResp.result);
+    // test getType
+    expect(failoverEtherFetcher.getType()).toEqual(EtherFetcherType.Failover);
     // test scan api error and failover to provder
     const failoverEtherFetcher2 = new FailoverEtherFetcher({
       chainId: 56,

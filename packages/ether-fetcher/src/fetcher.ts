@@ -15,6 +15,12 @@ export interface EventLogsFetchResponse {
   eventLogs: ethers.providers.Log[];
 }
 
+export enum EtherFetcherType {
+  ScanApi,
+  Provider,
+  Failover,
+}
+
 export interface EtherFetcher {
   fetchEventLogs(
     address: string,
@@ -24,6 +30,8 @@ export interface EtherFetcher {
   ): Promise<ethers.providers.Log[]>;
 
   ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any>;
+
+  getType(): EtherFetcherType;
 
   getBlockNumber(): Promise<number>;
 
@@ -69,6 +77,10 @@ export class ScanApiEtherFetcher implements EtherFetcher {
     this.axiosInstance = createAxiosInstance(this.scanApiBaseUrl);
     this.maxRequestsPerSecond = options.maxRequestsPerSecond ? options.maxRequestsPerSecond : 5;
     this.retryPolicy = options.retryPolicy ? options.retryPolicy : new DefaultRetryPolicy();
+  }
+
+  public getType(): EtherFetcherType {
+    return EtherFetcherType.ScanApi;
   }
 
   public async jsonRpcProxy(paramsMap: Map<string, any>): Promise<any> {
@@ -202,6 +214,9 @@ export class ProviderEtherFetcher implements EtherFetcher {
   constructor(options: ProviderEtherFetcherOptions) {
     this.provider = options.provider;
   }
+  public getType(): EtherFetcherType {
+    return EtherFetcherType.Provider;
+  }
 
   public async ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any> {
     return this.provider.call(
@@ -275,6 +290,9 @@ export class FailoverEtherFetcher implements EtherFetcher {
     this.providerFetcher = new ProviderEtherFetcher({
       provider: options.provider,
     });
+  }
+  public getType(): EtherFetcherType {
+    return EtherFetcherType.Failover;
   }
 
   public async getBlockNumber(): Promise<number> {
