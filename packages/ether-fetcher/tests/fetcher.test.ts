@@ -24,7 +24,7 @@ class TestProvider extends ethers.providers.BaseProvider {
         transactionIndex: 1,
         removed: true,
         address: '0x123',
-        data: '0x00000',
+        data: '0x11111',
         topics: ['0x111', '0x222'],
         transactionHash: '0x123',
         logIndex: 10,
@@ -35,7 +35,7 @@ class TestProvider extends ethers.providers.BaseProvider {
         transactionIndex: 2,
         removed: false,
         address: '0x456',
-        data: '0x1111',
+        data: '0x22222',
         topics: ['0x333', '0x444'],
         transactionHash: '0x456',
         logIndex: 20,
@@ -370,7 +370,7 @@ describe('test fetchers', () => {
   it('test FailoverEtherFetcher', async () => {
     nock('http://localhost:3333')
       .get('/api')
-      .times(3)
+      .times(10)
       .query({
         module: 'logs',
         action: 'getLogs',
@@ -378,11 +378,15 @@ describe('test fetchers', () => {
         fromBlock,
         toBlock,
         topic0,
-        page: page,
+        page,
         offset,
         apikey,
       })
-      .reply(200, mockedEvents);
+      .reply(200, {
+        status: '1',
+        message: 'OK',
+        result: mockedEvents,
+      });
     nock('http://localhost:3333')
       .get(`/api?${getBlocknumberQueryString}`)
       .reply(200, {
@@ -441,5 +445,50 @@ describe('test fetchers', () => {
     const provider2 = new TestProvider(2, 'chain 2');
     failoverEtherFetcher.resetProvider(provider2);
     expect(failoverEtherFetcher.getProvider()).toBe(provider2);
+    // test fetcherEventLogsWithFallbackToBlock
+    const fallbackToBlock = 19000;
+    const failoverEtherFetcher3 = new FailoverEtherFetcher({
+      chainId: 1,
+      apikey,
+      provider,
+      offset: 1000,
+      scanApiBaseUrl: 'http://localhost:4444',
+    });
+    const eventLogsResp1 = await failoverEtherFetcher3.fetchEventLogsWithFallbackToBlock(
+      address,
+      fromBlock,
+      toBlock,
+      topic0,
+      fallbackToBlock,
+    );
+    expect(eventLogsResp1.eventLogs.length).toEqual(2);
+    expect(eventLogsResp1.finalToBlock).toEqual(fallbackToBlock);
+    nock('http://localhost:4444')
+      .get('/api')
+      .query({
+        module: 'logs',
+        action: 'getLogs',
+        address,
+        fromBlock,
+        toBlock,
+        topic0,
+        page,
+        offset: 1000,
+        apikey,
+      })
+      .reply(200, {
+        status: '1',
+        message: 'OK',
+        result: mockedEvents,
+      });
+    const eventLogsResp2 = await failoverEtherFetcher3.fetchEventLogsWithFallbackToBlock(
+      address,
+      fromBlock,
+      toBlock,
+      topic0,
+      fallbackToBlock,
+    );
+    expect(eventLogsResp2.eventLogs.length).toEqual(2);
+    expect(eventLogsResp2.finalToBlock).toEqual(toBlock);
   });
 });

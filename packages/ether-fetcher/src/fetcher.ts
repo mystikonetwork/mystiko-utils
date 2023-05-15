@@ -10,6 +10,11 @@ import {
 import { DefaultRetryPolicy, RetryPolicy } from './retry';
 import { AxiosInstance } from 'axios';
 
+export interface EventLogsFetchResponse {
+  finalToBlock: number;
+  eventLogs: ethers.providers.Log[];
+}
+
 export interface EtherFetcher {
   fetchEventLogs(
     address: string,
@@ -321,6 +326,33 @@ export class FailoverEtherFetcher implements EtherFetcher {
     return this.scanApiFetcher.fetchEventLogs(address, fromBlock, toBlock, topicId).catch(() => {
       return this.providerFetcher.fetchEventLogs(address, fromBlock, toBlock, topicId);
     });
+  }
+
+  public async fetchEventLogsWithFallbackToBlock(
+    address: string,
+    fromBlock: number,
+    toBlock: number,
+    topicId: string,
+    fallbackToBlock: number,
+  ): Promise<EventLogsFetchResponse> {
+    return this.scanApiFetcher
+      .fetchEventLogs(address, fromBlock, toBlock, topicId)
+      .then((logs: ethers.providers.Log[]) => {
+        return Promise.resolve({
+          finalToBlock: toBlock,
+          eventLogs: logs,
+        });
+      })
+      .catch(async () => {
+        return this.providerFetcher
+          .fetchEventLogs(address, fromBlock, fallbackToBlock, topicId)
+          .then((logs: ethers.providers.Log[]) => {
+            return Promise.resolve({
+              finalToBlock: fallbackToBlock,
+              eventLogs: logs,
+            });
+          });
+      });
   }
 
   public async ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any> {
