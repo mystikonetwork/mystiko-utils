@@ -497,5 +497,9 @@ describe('test fetchers', () => {
     );
     expect(eventLogsResp2.eventLogs.length).toEqual(2);
     expect(eventLogsResp2.finalToBlock).toEqual(toBlock);
+    await expect(
+      async () =>
+        await failoverEtherFetcher3.fetchEventLogsWithFallbackToBlock(address, fromBlock, toBlock, topic0),
+    ).rejects.toThrowError();
   });
 });

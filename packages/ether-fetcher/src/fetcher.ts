@@ -275,8 +275,8 @@ export class ProviderEtherFetcher implements EtherFetcher {
 }
 
 export class FailoverEtherFetcher implements EtherFetcher {
-  private scanApiFetcher: ScanApiEtherFetcher;
-  private providerFetcher: ProviderEtherFetcher;
+  public scanApiFetcher: ScanApiEtherFetcher;
+  public providerFetcher: ProviderEtherFetcher;
 
   constructor(options: FailoverFetcherOptions) {
     this.scanApiFetcher = new ScanApiEtherFetcher({
@@ -351,7 +351,7 @@ export class FailoverEtherFetcher implements EtherFetcher {
     fromBlock: number,
     toBlock: number,
     topicId: string,
-    fallbackToBlock: number,
+    fallbackToBlock?: number | undefined,
   ): Promise<EventLogsFetchResponse> {
     return this.scanApiFetcher
       .fetchEventLogs(address, fromBlock, toBlock, topicId)
@@ -362,6 +362,11 @@ export class FailoverEtherFetcher implements EtherFetcher {
         });
       })
       .catch(async () => {
+        if (!fallbackToBlock) {
+          throw new Error(
+            'Fetch event from api error, fallbackToBlock is undefined, will not fecth from provider!',
+          );
+        }
         return this.providerFetcher
           .fetchEventLogs(address, fromBlock, fallbackToBlock, topicId)
           .then((logs: ethers.providers.Log[]) => {
