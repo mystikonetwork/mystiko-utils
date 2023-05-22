@@ -10,6 +10,17 @@ import {
 import { DefaultRetryPolicy, RetryPolicy } from './retry';
 import { AxiosInstance } from 'axios';
 
+export interface EventLogsFetchResponse {
+  finalToBlock: number;
+  eventLogs: ethers.providers.Log[];
+}
+
+export enum EtherFetcherType {
+  ScanApi,
+  Provider,
+  Failover,
+}
+
 export interface EtherFetcher {
   fetchEventLogs(
     address: string,
@@ -19,6 +30,8 @@ export interface EtherFetcher {
   ): Promise<ethers.providers.Log[]>;
 
   ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any>;
+
+  getType(): EtherFetcherType;
 
   getBlockNumber(): Promise<number>;
 
@@ -64,6 +77,10 @@ export class ScanApiEtherFetcher implements EtherFetcher {
     this.axiosInstance = createAxiosInstance(this.scanApiBaseUrl);
     this.maxRequestsPerSecond = options.maxRequestsPerSecond ? options.maxRequestsPerSecond : 5;
     this.retryPolicy = options.retryPolicy ? options.retryPolicy : new DefaultRetryPolicy();
+  }
+
+  public getType(): EtherFetcherType {
+    return EtherFetcherType.ScanApi;
   }
 
   public async jsonRpcProxy(paramsMap: Map<string, any>): Promise<any> {
@@ -197,6 +214,9 @@ export class ProviderEtherFetcher implements EtherFetcher {
   constructor(options: ProviderEtherFetcherOptions) {
     this.provider = options.provider;
   }
+  public getType(): EtherFetcherType {
+    return EtherFetcherType.Provider;
+  }
 
   public async ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any> {
     return this.provider.call(
@@ -255,8 +275,8 @@ export class ProviderEtherFetcher implements EtherFetcher {
 }
 
 export class FailoverEtherFetcher implements EtherFetcher {
-  private scanApiFetcher: ScanApiEtherFetcher;
-  private providerFetcher: ProviderEtherFetcher;
+  public scanApiFetcher: ScanApiEtherFetcher;
+  public providerFetcher: ProviderEtherFetcher;
 
   constructor(options: FailoverFetcherOptions) {
     this.scanApiFetcher = new ScanApiEtherFetcher({
@@ -270,6 +290,9 @@ export class FailoverEtherFetcher implements EtherFetcher {
     this.providerFetcher = new ProviderEtherFetcher({
       provider: options.provider,
     });
+  }
+  public getType(): EtherFetcherType {
+    return EtherFetcherType.Failover;
   }
 
   public async getBlockNumber(): Promise<number> {
@@ -321,6 +344,38 @@ export class FailoverEtherFetcher implements EtherFetcher {
     return this.scanApiFetcher.fetchEventLogs(address, fromBlock, toBlock, topicId).catch(() => {
       return this.providerFetcher.fetchEventLogs(address, fromBlock, toBlock, topicId);
     });
+  }
+
+  public async fetchEventLogsWithFallbackToBlock(
+    address: string,
+    fromBlock: number,
+    toBlock: number,
+    topicId: string,
+    fallbackToBlock?: number | undefined,
+  ): Promise<EventLogsFetchResponse> {
+    return this.scanApiFetcher
+      .fetchEventLogs(address, fromBlock, toBlock, topicId)
+      .then((logs: ethers.providers.Log[]) => {
+        return Promise.resolve({
+          finalToBlock: toBlock,
+          eventLogs: logs,
+        });
+      })
+      .catch(async () => {
+        if (!fallbackToBlock) {
+          throw new Error(
+            'Fetch event from api error, fallbackToBlock is undefined, will not fecth from provider!',
+          );
+        }
+        return this.providerFetcher
+          .fetchEventLogs(address, fromBlock, fallbackToBlock, topicId)
+          .then((logs: ethers.providers.Log[]) => {
+            return Promise.resolve({
+              finalToBlock: fallbackToBlock,
+              eventLogs: logs,
+            });
+          });
+      });
   }
 
   public async ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any> {
