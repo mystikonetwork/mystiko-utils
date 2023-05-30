@@ -5,6 +5,14 @@ export const DEFAULT_MAINNET_ETHER_API_BASE_URL = 'https://api.etherscan.io';
 
 export const DEFAULT_MAINNET_BSC_API_BASE_URL = 'https://api.bscscan.com';
 
+export const DEFAULT_MAINNET_POLYGON_API_BASE_URL = 'https://api.polygonscan.com';
+
+export const DEFAULT_MAINNET_AVALANCHE_API_BASE_URL = 'https://api.snowtrace.io';
+
+export const DEFAULT_MAINNET_FANTOM_API_BASE_URL = 'https://api.ftmscan.com';
+
+export const DEFAULT_MAINNET_MOONBEAM_API_BASE_URL = 'https://api-moonbeam.moonscan.io';
+
 export const DEFAULT_TESTNET_GOERLI_API_BASE_URL = 'https://api-goerli.etherscan.io';
 
 export const DEFAULT_TESTNET_BSC_API_BASE_URL = 'https://api-testnet.bscscan.com';
@@ -35,6 +43,14 @@ export function getDefaultScanApiBaseUrl(chainId: number): string {
       return DEFAULT_MAINNET_ETHER_API_BASE_URL;
     case 56:
       return DEFAULT_MAINNET_BSC_API_BASE_URL;
+    case 137:
+      return DEFAULT_MAINNET_POLYGON_API_BASE_URL;
+    case 43114:
+      return DEFAULT_MAINNET_AVALANCHE_API_BASE_URL;
+    case 250:
+      return DEFAULT_MAINNET_FANTOM_API_BASE_URL;
+    case 1284:
+      return DEFAULT_MAINNET_MOONBEAM_API_BASE_URL;
     case 5:
       return DEFAULT_TESTNET_GOERLI_API_BASE_URL;
     case 97:
