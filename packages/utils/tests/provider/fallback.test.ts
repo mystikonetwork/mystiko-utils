@@ -4,6 +4,10 @@ import { FallbackProvider, TimeoutError } from '../../src';
 class TestProvider extends ethers.providers.BaseProvider {
   public error?: ethers.errors | TimeoutError;
 
+  public returnNull?: boolean;
+
+  public returnUndefined?: boolean;
+
   private readonly chainId: number;
 
   private readonly chainName: string;
@@ -25,6 +29,12 @@ class TestProvider extends ethers.providers.BaseProvider {
   }
 
   public perform(method: string, params: any): Promise<any> {
+    if (this.returnNull) {
+      return Promise.resolve(null);
+    }
+    if (this.returnUndefined) {
+      return Promise.resolve(undefined);
+    }
     if (this.error instanceof TimeoutError) {
       return Promise.reject(this.error);
     }
@@ -89,4 +99,24 @@ test('test perform', async () => {
   provider1.error = undefined;
   const result = await fallbackProvider.perform('m', 'p');
   expect(result.chainName).toBe('chain 1 #1');
+});
+
+test('test perform with null', async () => {
+  const provider1 = new TestProvider(1, 'chain 1 #1', { chainId: 1, name: 'chain 1 #1' });
+  const provider2 = new TestProvider(1, 'chain 1 #2', { chainId: 1, name: 'chain 1 #2' });
+  provider1.returnNull = true;
+  const fallbackProvider = new FallbackProvider([provider1, provider2]);
+  expect((await fallbackProvider.perform('m', 'p')).chainName).toBe('chain 1 #2');
+  provider2.returnNull = true;
+  expect(await fallbackProvider.perform('m', 'p')).toBe(null);
+});
+
+test('test perform with undefined', async () => {
+  const provider1 = new TestProvider(1, 'chain 1 #1', { chainId: 1, name: 'chain 1 #1' });
+  const provider2 = new TestProvider(1, 'chain 1 #2', { chainId: 1, name: 'chain 1 #2' });
+  provider1.returnUndefined = true;
+  const fallbackProvider = new FallbackProvider([provider1, provider2]);
+  expect((await fallbackProvider.perform('m', 'p')).chainName).toBe('chain 1 #2');
+  provider2.returnUndefined = true;
+  expect(await fallbackProvider.perform('m', 'p')).toBe(undefined);
 });
