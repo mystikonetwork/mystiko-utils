@@ -63,14 +63,22 @@ export default class FallbackProvider extends ethers.providers.BaseProvider {
 
   private performRecursively(method: string, params: any, index: number): Promise<any> {
     const rawProvider = this.rawProviders[index];
-    return rawProvider.perform(method, params).catch((error: any) => {
-      if (error instanceof Error) {
-        if (index < this.rawProviders.length - 1 && FallbackProvider.isRetryable(error)) {
+    return rawProvider
+      .perform(method, params)
+      .then((result) => {
+        if (!result && index < this.rawProviders.length - 1) {
           return this.performRecursively(method, params, index + 1);
         }
-      }
-      return Promise.reject(error);
-    });
+        return Promise.resolve(result);
+      })
+      .catch((error: any) => {
+        if (error instanceof Error) {
+          if (index < this.rawProviders.length - 1 && FallbackProvider.isRetryable(error)) {
+            return this.performRecursively(method, params, index + 1);
+          }
+        }
+        return Promise.reject(error);
+      });
   }
 
   private static isRetryable(error: Error): boolean {
