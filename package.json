@@ -1,6 +1,6 @@
 {
   "name": "mystiko-utils",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Typescript utility helpers of Mystiko.Network",
   "private": true,
   "repository": "https://github.com/mystikonetwork/mystiko-utils",

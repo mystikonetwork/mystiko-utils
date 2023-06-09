@@ -66,4 +66,9 @@ test('test waitTransaction', async () => {
   expect((await waitTransaction(case3)).transactionHash).toBe(
     '0x663acbbce78801a4c36ee54291e08f40a4831e6246cbf00c761727d60c0efb23',
   );
+  const case4 = new MockTransaction({
+    transactionHash: '0x12e7909f206e3a83f5d5f066f649440fe518ae6c3011b25f3f834c37258b3997',
+    status: 0,
+  } as ethers.providers.TransactionReceipt);
+  await expect(waitTransaction(case4)).rejects.toThrow(new Error('transaction failed'));
 });
