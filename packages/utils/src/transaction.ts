@@ -1,16 +1,10 @@
 import { ethers } from 'ethers';
 import { EtherError } from './error';
 
-export interface TransactionResponseLike {
-  wait: (confirmations?: number) => Promise<ethers.providers.TransactionReceipt>;
-}
-
-export function waitTransaction(
-  txResponse: TransactionResponseLike,
-  confirmations?: number,
+function handleTransactionReceipt(
+  receiptPromise: Promise<ethers.providers.TransactionReceipt>,
 ): Promise<ethers.providers.TransactionReceipt> {
-  return txResponse
-    .wait(confirmations)
+  return receiptPromise
     .then((receipt) => {
       if (receipt.status === 0) {
         return Promise.reject(new Error('transaction failed'));
@@ -24,4 +18,24 @@ export function waitTransaction(
       }
       return Promise.reject(error);
     });
+}
+
+export interface TransactionResponseLike {
+  wait: (confirmations?: number) => Promise<ethers.providers.TransactionReceipt>;
+}
+
+export function waitTransaction(
+  txResponse: TransactionResponseLike,
+  confirmations?: number,
+): Promise<ethers.providers.TransactionReceipt> {
+  return handleTransactionReceipt(txResponse.wait(confirmations));
+}
+
+export function waitTransactionHash(
+  provider: ethers.providers.Provider,
+  txHash: string,
+  confirmations?: number,
+  timeout?: number,
+): Promise<ethers.providers.TransactionReceipt> {
+  return handleTransactionReceipt(provider.waitForTransaction(txHash, confirmations, timeout));
 }
