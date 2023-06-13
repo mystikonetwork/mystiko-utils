@@ -60,7 +60,7 @@ export type ProviderEtherFetcherOptions = {
 
 export type FailoverFetcherOptions = ScanApiEtherFetcherOptions &
   ProviderEtherFetcherOptions & {
-    failoverWhileApiFetchEmptyLogs?: boolean;
+    fallbackWhileApiFetchEmptyLogs?: boolean;
   };
 
 export class ScanApiEtherFetcher implements EtherFetcher {
@@ -293,7 +293,7 @@ export class FailoverEtherFetcher implements EtherFetcher {
   public scanApiFetcher: ScanApiEtherFetcher;
   public providerFetcher: ProviderEtherFetcher;
   private logger: Logger;
-  private failoverWhileApiFetchEmptyLogs: boolean;
+  private fallbackWhileApiFetchEmptyLogs: boolean;
 
   constructor(options: FailoverFetcherOptions) {
     this.scanApiFetcher = new ScanApiEtherFetcher({
@@ -310,7 +310,7 @@ export class FailoverEtherFetcher implements EtherFetcher {
     });
     this.logger = rootLogger.getLogger('FailoverEtherFetcher');
     this.logger.setLevel(options.logLevel ?? 'info');
-    this.failoverWhileApiFetchEmptyLogs = options.failoverWhileApiFetchEmptyLogs || false;
+    this.fallbackWhileApiFetchEmptyLogs = options.fallbackWhileApiFetchEmptyLogs || false;
   }
   public getType(): EtherFetcherType {
     return EtherFetcherType.Failover;
@@ -410,7 +410,7 @@ export class FailoverEtherFetcher implements EtherFetcher {
       .then((logs: ethers.providers.Log[]) => {
         const errorMsg = `fetchEventLogs response from ScanApiFetcher is nul or undefined, logs: ${logs}, address: ${address}, fromBlock: ${fromBlock}, toBlock: ${toBlock}, topicId: ${topicId}`;
         checkDefinedAndNotNull(logs, errorMsg);
-        if (logs.length === 0 && this.failoverWhileApiFetchEmptyLogs) {
+        if (logs.length === 0 && this.fallbackWhileApiFetchEmptyLogs) {
           throw new Error(errorMsg);
         }
         return Promise.resolve(logs);
@@ -435,7 +435,7 @@ export class FailoverEtherFetcher implements EtherFetcher {
       .then((logs: ethers.providers.Log[]) => {
         const errorMsg = `fetchEventLogsWithFallbackToBlock response from ScanApiFetcher is nul or undefined, logs: ${logs}, address: ${address}, fromBlock: ${fromBlock}, toBlock: ${toBlock}, topicId: ${topicId}, fallbackToBlock: ${fallbackToBlock}`;
         checkDefinedAndNotNull(logs, errorMsg);
-        if (logs.length === 0 && this.failoverWhileApiFetchEmptyLogs) {
+        if (logs.length === 0 && this.fallbackWhileApiFetchEmptyLogs) {
           throw new Error(errorMsg);
         }
         return Promise.resolve({

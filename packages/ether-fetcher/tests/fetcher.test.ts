@@ -529,7 +529,7 @@ describe('test fetchers', () => {
       provider,
       offset: 1000,
       scanApiBaseUrl: 'http://localhost:5555',
-      failoverWhileApiFetchEmptyLogs: true,
+      fallbackWhileApiFetchEmptyLogs: true,
     });
     const events2 = await failoverEtherFetcher4.fetchEventLogs(address, fromBlock, toBlock, topic0);
     expect(events2).toEqual(await provider.getLogs());
