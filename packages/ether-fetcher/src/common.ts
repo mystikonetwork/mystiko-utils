@@ -73,7 +73,7 @@ export function createAxiosInstance(baseUrl: string): AxiosInstance {
   axiosInstance.interceptors.response.use(
     function (response: AxiosResponse) {
       const respData = response.data;
-      if (!respData.status) {
+      if (!respData.status && respData.jsonrpc) {
         return Promise.resolve(respData.result);
       }
       if (respData.status === '1') {

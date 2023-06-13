@@ -9,6 +9,8 @@ import {
 } from './common';
 import { DefaultRetryPolicy, RetryPolicy } from './retry';
 import { AxiosInstance } from 'axios';
+import { Logger, LogLevelDesc } from 'loglevel';
+import { checkDefinedAndNotNull, logger as rootLogger } from '@mystikonetwork/utils';
 
 export interface EventLogsFetchResponse {
   finalToBlock: number;
@@ -49,13 +51,17 @@ export type ScanApiEtherFetcherOptions = {
   offset?: number;
   maxRequestsPerSecond?: number;
   retryPolicy?: RetryPolicy;
+  logLevel?: LogLevelDesc;
 };
 
 export type ProviderEtherFetcherOptions = {
   provider: ethers.providers.Provider;
 };
 
-export type FailoverFetcherOptions = ScanApiEtherFetcherOptions & ProviderEtherFetcherOptions;
+export type FailoverFetcherOptions = ScanApiEtherFetcherOptions &
+  ProviderEtherFetcherOptions & {
+    failoverWhileApiFetchEmptyLogs?: boolean;
+  };
 
 export class ScanApiEtherFetcher implements EtherFetcher {
   public readonly chainId: number;
@@ -66,6 +72,7 @@ export class ScanApiEtherFetcher implements EtherFetcher {
   private readonly maxRequestsPerSecond: number;
   private lastRequestTime: number | null = null;
   private readonly retryPolicy: RetryPolicy;
+  private readonly logger: Logger;
 
   constructor(options: ScanApiEtherFetcherOptions) {
     this.chainId = options.chainId;
@@ -76,6 +83,8 @@ export class ScanApiEtherFetcher implements EtherFetcher {
       : getDefaultScanApiBaseUrl(this.chainId);
     this.axiosInstance = createAxiosInstance(this.scanApiBaseUrl);
     this.maxRequestsPerSecond = options.maxRequestsPerSecond ? options.maxRequestsPerSecond : 5;
+    this.logger = rootLogger.getLogger(this.constructor.name);
+    this.logger.setLevel(options.logLevel ?? 'info');
     this.retryPolicy = options.retryPolicy ? options.retryPolicy : new DefaultRetryPolicy();
   }
 
@@ -98,8 +107,14 @@ export class ScanApiEtherFetcher implements EtherFetcher {
       })
       .catch((error: any) => {
         if (this.retryPolicy.isRetryable(error, currentRetryTime)) {
+          this.logger.trace(
+            `an error was caught that could be retried, currentRetryTime: ${currentRetryTime}`,
+          );
           return this.jsonRpcProxyWithRetry(currentRetryTime + 1, paramsMap);
         }
+        this.logger.info(
+          `can not retry, currentRetryTime: ${currentRetryTime}, error: ${JSON.stringify(error)}`,
+        );
         return Promise.reject(error);
       });
   }
@@ -277,6 +292,8 @@ export class ProviderEtherFetcher implements EtherFetcher {
 export class FailoverEtherFetcher implements EtherFetcher {
   public scanApiFetcher: ScanApiEtherFetcher;
   public providerFetcher: ProviderEtherFetcher;
+  private logger: Logger;
+  private failoverWhileApiFetchEmptyLogs: boolean;
 
   constructor(options: FailoverFetcherOptions) {
     this.scanApiFetcher = new ScanApiEtherFetcher({
@@ -286,10 +303,14 @@ export class FailoverEtherFetcher implements EtherFetcher {
       offset: options.offset,
       maxRequestsPerSecond: options.maxRequestsPerSecond,
       retryPolicy: options.retryPolicy,
+      logLevel: options.logLevel,
     });
     this.providerFetcher = new ProviderEtherFetcher({
       provider: options.provider,
     });
+    this.logger = rootLogger.getLogger('FailoverEtherFetcher');
+    this.logger.setLevel(options.logLevel ?? 'info');
+    this.failoverWhileApiFetchEmptyLogs = options.failoverWhileApiFetchEmptyLogs || false;
   }
   public getType(): EtherFetcherType {
     return EtherFetcherType.Failover;
@@ -299,9 +320,16 @@ export class FailoverEtherFetcher implements EtherFetcher {
     return this.scanApiFetcher
       .getBlockNumber()
       .then((blockNumber: number) => {
+        checkDefinedAndNotNull(
+          blockNumber,
+          `getBlockNumber response from ScanApiFetcher is null or undefined, blockNumber: ${blockNumber}`,
+        );
         return BigNumber.from(blockNumber).toNumber();
       })
-      .catch(async () => {
+      .catch(async (error) => {
+        this.logger.info(
+          `getBlockNumber raise error: ${JSON.stringify(error)}, will fallback to ProviderFetcher.`,
+        );
         return this.providerFetcher.getBlockNumber().then((blockNumber: number) => {
           return BigNumber.from(blockNumber).toNumber();
         });
@@ -309,21 +337,57 @@ export class FailoverEtherFetcher implements EtherFetcher {
   }
 
   public async getBlockByNumber(blockNumber: number): Promise<ethers.providers.Block> {
-    return this.scanApiFetcher.getBlockByNumber(blockNumber).catch(() => {
-      return this.providerFetcher.getBlockByNumber(blockNumber);
-    });
+    return this.scanApiFetcher
+      .getBlockByNumber(blockNumber)
+      .then((block: ethers.providers.Block) => {
+        checkDefinedAndNotNull(
+          block,
+          `getBlockByNumber response from ScanApiFetcher is null or undefined, block: ${block}, blockNumber: ${blockNumber}`,
+        );
+        return Promise.resolve(block);
+      })
+      .catch((error) => {
+        this.logger.info(
+          `getBlockByNumber raise error: ${JSON.stringify(error)}, will fallback to ProviderFetcher.`,
+        );
+        return this.providerFetcher.getBlockByNumber(blockNumber);
+      });
   }
 
   public async getTransactionByHash(transactionHash: string): Promise<ethers.providers.TransactionResponse> {
-    return this.scanApiFetcher.getTransactionByHash(transactionHash).catch(() => {
-      return this.providerFetcher.getTransactionByHash(transactionHash);
-    });
+    return this.scanApiFetcher
+      .getTransactionByHash(transactionHash)
+      .then((txResponse: ethers.providers.TransactionResponse) => {
+        checkDefinedAndNotNull(
+          txResponse,
+          `getTransactionByHash response from ScanApiFetcher is null or undefined, txResponse: ${txResponse}, transactionHash: ${transactionHash}`,
+        );
+        return Promise.resolve(txResponse);
+      })
+      .catch((error) => {
+        this.logger.info(
+          `getTransactionByHash raise error: ${JSON.stringify(error)}, will fallback to ProviderFetcher.`,
+        );
+        return this.providerFetcher.getTransactionByHash(transactionHash);
+      });
   }
 
   public async getTransactionReceipt(transactionHash: string): Promise<ethers.providers.TransactionReceipt> {
-    return this.scanApiFetcher.getTransactionReceipt(transactionHash).catch(() => {
-      return this.providerFetcher.getTransactionReceipt(transactionHash);
-    });
+    return this.scanApiFetcher
+      .getTransactionReceipt(transactionHash)
+      .then((txReceipt: ethers.providers.TransactionReceipt) => {
+        checkDefinedAndNotNull(
+          txReceipt,
+          `getTransactionReceipt response from ScanApiFetcher is null or undefined, txReceipt: ${txReceipt}, transactionHash: ${transactionHash}`,
+        );
+        return Promise.resolve(txReceipt);
+      })
+      .catch((error) => {
+        this.logger.info(
+          `getTransactionReceipt raise error: ${JSON.stringify(error)}, will fallback to ProviderFetcher.`,
+        );
+        return this.providerFetcher.getTransactionReceipt(transactionHash);
+      });
   }
 
   public resetProvider(provider: ethers.providers.Provider): FailoverEtherFetcher {
@@ -341,9 +405,22 @@ export class FailoverEtherFetcher implements EtherFetcher {
     toBlock: number,
     topicId: string,
   ): Promise<ethers.providers.Log[]> {
-    return this.scanApiFetcher.fetchEventLogs(address, fromBlock, toBlock, topicId).catch(() => {
-      return this.providerFetcher.fetchEventLogs(address, fromBlock, toBlock, topicId);
-    });
+    return this.scanApiFetcher
+      .fetchEventLogs(address, fromBlock, toBlock, topicId)
+      .then((logs: ethers.providers.Log[]) => {
+        const errorMsg = `fetchEventLogs response from ScanApiFetcher is nul or undefined, logs: ${logs}, address: ${address}, fromBlock: ${fromBlock}, toBlock: ${toBlock}, topicId: ${topicId}`;
+        checkDefinedAndNotNull(logs, errorMsg);
+        if (logs.length === 0 && this.failoverWhileApiFetchEmptyLogs) {
+          throw new Error(errorMsg);
+        }
+        return Promise.resolve(logs);
+      })
+      .catch((error) => {
+        this.logger.info(
+          `fetchEventLogs raise error: ${JSON.stringify(error)}, will fallback to ProviderFetcher.`,
+        );
+        return this.providerFetcher.fetchEventLogs(address, fromBlock, toBlock, topicId);
+      });
   }
 
   public async fetchEventLogsWithFallbackToBlock(
@@ -356,17 +433,27 @@ export class FailoverEtherFetcher implements EtherFetcher {
     return this.scanApiFetcher
       .fetchEventLogs(address, fromBlock, toBlock, topicId)
       .then((logs: ethers.providers.Log[]) => {
+        const errorMsg = `fetchEventLogsWithFallbackToBlock response from ScanApiFetcher is nul or undefined, logs: ${logs}, address: ${address}, fromBlock: ${fromBlock}, toBlock: ${toBlock}, topicId: ${topicId}, fallbackToBlock: ${fallbackToBlock}`;
+        checkDefinedAndNotNull(logs, errorMsg);
+        if (logs.length === 0 && this.failoverWhileApiFetchEmptyLogs) {
+          throw new Error(errorMsg);
+        }
         return Promise.resolve({
           finalToBlock: toBlock,
           eventLogs: logs,
         });
       })
-      .catch(async () => {
+      .catch(async (error) => {
         if (!fallbackToBlock) {
           throw new Error(
             'Fetch event from api error, fallbackToBlock is undefined, will not fecth from provider!',
           );
         }
+        this.logger.info(
+          `fetchEventLogsWithFallbackToBlock raise error: ${JSON.stringify(
+            error,
+          )}, will fallback to ProviderFetcher.`,
+        );
         return this.providerFetcher
           .fetchEventLogs(address, fromBlock, fallbackToBlock, topicId)
           .then((logs: ethers.providers.Log[]) => {
@@ -379,8 +466,18 @@ export class FailoverEtherFetcher implements EtherFetcher {
   }
 
   public async ethCall(to: string, functionEncodedData: string, blockTag?: string | undefined): Promise<any> {
-    return this.scanApiFetcher.ethCall(to, functionEncodedData, blockTag).catch(() => {
-      return this.providerFetcher.ethCall(to, functionEncodedData, blockTag);
-    });
+    return this.scanApiFetcher
+      .ethCall(to, functionEncodedData, blockTag)
+      .then((any) => {
+        checkDefinedAndNotNull(
+          any,
+          `ethCall response from ScanApiFetcher is null or undefined, resp: ${any}, to: ${to}, functionEncodedData: ${functionEncodedData}, blockTag: ${blockTag}`,
+        );
+        return Promise.resolve(any);
+      })
+      .catch((error) => {
+        this.logger.info(`ethCall raise error: ${JSON.stringify(error)}, will fallback to ProviderFetcher.`);
+        return this.providerFetcher.ethCall(to, functionEncodedData, blockTag);
+      });
   }
 }
