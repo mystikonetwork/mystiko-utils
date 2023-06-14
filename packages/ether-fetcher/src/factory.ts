@@ -23,6 +23,7 @@ export class ScanApiEtherFetcherFactory implements EtherFetcherFactory {
       offset: options.offset,
       maxRequestsPerSecond: options.maxRequestsPerSecond,
       retryPolicy: options.retryPolicy,
+      logLevel: options.logLevel,
     });
   }
 }
@@ -45,6 +46,7 @@ export class FailoverEtherFetcherFactory implements EtherFetcherFactory {
       maxRequestsPerSecond: options.maxRequestsPerSecond,
       retryPolicy: options.retryPolicy,
       provider: options.provider,
+      logLevel: options.logLevel,
     });
   }
 }
