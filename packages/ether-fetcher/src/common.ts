@@ -13,6 +13,12 @@ export const DEFAULT_MAINNET_FANTOM_API_BASE_URL = 'https://api.ftmscan.com';
 
 export const DEFAULT_MAINNET_MOONBEAM_API_BASE_URL = 'https://api-moonbeam.moonscan.io';
 
+export const DEFAULT_MAINNET_BASE_API_BASE_URL = 'https://api.basescan.org';
+
+export const DEFAULT_MAINNET_ARBITRUM_ONE_API_BASE_URL = 'https://api.arbiscan.io';
+
+export const DEFAULT_MAINNET_OPTIMISM_API_BASE_URL = 'https://api-optimistic.etherscan.io';
+
 export const DEFAULT_TESTNET_GOERLI_API_BASE_URL = 'https://api-goerli.etherscan.io';
 
 export const DEFAULT_TESTNET_BSC_API_BASE_URL = 'https://api-testnet.bscscan.com';
@@ -24,6 +30,12 @@ export const DEFAULT_TESTNET_AVALANCHE_FUJI_API_BASE_URL = 'https://api-testnet.
 export const DEFAULT_TESTNET_FANTOM_API_BASE_URL = 'https://api-testnet.ftmscan.com';
 
 export const DEFAULT_TESTNET_MOONBASE_ALPHA_API_BASE_URL = 'https://api-moonbase.moonscan.io';
+
+export const DEFAULT_TESTNET_BASE_GOERLI_API_BASE_URL = 'https://api-goerli.basescan.org';
+
+export const DEFAULT_TESTNET_ARBITRUM_GOERLI_API_BASE_URL = 'https://api-goerli.arbiscan.io';
+
+export const DEFAULT_TESTNET_OPTIMISM_GOERLI_API_BASE_URL = 'https://api-goerli-optimistic.etherscan.io';
 
 export interface ScanApiEventLogParams {
   module: string;
@@ -51,6 +63,12 @@ export function getDefaultScanApiBaseUrl(chainId: number): string {
       return DEFAULT_MAINNET_FANTOM_API_BASE_URL;
     case 1284:
       return DEFAULT_MAINNET_MOONBEAM_API_BASE_URL;
+    case 8453:
+      return DEFAULT_MAINNET_BASE_API_BASE_URL;
+    case 42161:
+      return DEFAULT_MAINNET_ARBITRUM_ONE_API_BASE_URL;
+    case 10:
+      return DEFAULT_MAINNET_OPTIMISM_API_BASE_URL;
     case 5:
       return DEFAULT_TESTNET_GOERLI_API_BASE_URL;
     case 97:
@@ -63,6 +81,12 @@ export function getDefaultScanApiBaseUrl(chainId: number): string {
       return DEFAULT_TESTNET_FANTOM_API_BASE_URL;
     case 1287:
       return DEFAULT_TESTNET_MOONBASE_ALPHA_API_BASE_URL;
+    case 84531:
+      return DEFAULT_TESTNET_BASE_GOERLI_API_BASE_URL;
+    case 421613:
+      return DEFAULT_TESTNET_ARBITRUM_GOERLI_API_BASE_URL;
+    case 420:
+      return DEFAULT_TESTNET_OPTIMISM_GOERLI_API_BASE_URL;
     default:
       throw new Error(`Invalid chain id`);
   }
