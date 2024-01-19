@@ -7,7 +7,8 @@ export const DEFAULT_MAINNET_BSC_API_BASE_URL = 'https://api.bscscan.com';
 
 export const DEFAULT_MAINNET_POLYGON_API_BASE_URL = 'https://api.polygonscan.com';
 
-export const DEFAULT_MAINNET_AVALANCHE_API_BASE_URL = 'https://api.snowtrace.io';
+export const DEFAULT_MAINNET_AVALANCHE_API_BASE_URL =
+  'https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan';
 
 export const DEFAULT_MAINNET_FANTOM_API_BASE_URL = 'https://api.ftmscan.com';
 
@@ -25,7 +26,8 @@ export const DEFAULT_TESTNET_BSC_API_BASE_URL = 'https://api-testnet.bscscan.com
 
 export const DEFAULT_TESTNET_POLYGAN_MUMBAI_API_BASE_URL = 'https://api-testnet.polygonscan.com';
 
-export const DEFAULT_TESTNET_AVALANCHE_FUJI_API_BASE_URL = 'https://api-testnet.snowtrace.io';
+export const DEFAULT_TESTNET_AVALANCHE_FUJI_API_BASE_URL =
+  'https://api.routescan.io/v2/network/testnet/evm/43113/etherscan';
 
 export const DEFAULT_TESTNET_FANTOM_API_BASE_URL = 'https://api-testnet.ftmscan.com';
 
