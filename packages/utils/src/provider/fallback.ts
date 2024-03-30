@@ -87,6 +87,7 @@ export default class FallbackProvider extends ethers.providers.BaseProvider {
     }
     const etherError = error as EtherError;
     switch (etherError.code) {
+      case ethers.errors.CALL_EXCEPTION:
       case ethers.errors.SERVER_ERROR:
       case ethers.errors.TIMEOUT:
       case ethers.errors.UNKNOWN_ERROR:
