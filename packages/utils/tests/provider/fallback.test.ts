@@ -81,6 +81,7 @@ test('test perform', async () => {
   const provider2 = new TestProvider(1, 'chain 1 #2', { chainId: 1, name: 'chain 1 #2' });
   const retryableErrors = [
     new TimeoutError('timeout'),
+    ethers.errors.CALL_EXCEPTION,
     ethers.errors.SERVER_ERROR,
     ethers.errors.TIMEOUT,
     ethers.errors.UNKNOWN_ERROR,
@@ -94,7 +95,7 @@ test('test perform', async () => {
     const result = await fallbackProvider.perform('m', 'p');
     expect(result.chainName).toBe('chain 1 #2');
   }
-  provider1.error = ethers.errors.CALL_EXCEPTION;
+  provider1.error = ethers.errors.BUFFER_OVERRUN;
   await expect(fallbackProvider.perform('m', 'p')).rejects.toThrow();
   provider1.error = undefined;
   const result = await fallbackProvider.perform('m', 'p');
