@@ -7,6 +7,8 @@ class MockTransaction implements TransactionResponseLike {
 
   private readonly shouldReplace: boolean;
 
+  private readonly sleepIntervalMs?: number;
+
   private readonly originalTxReceipt: ethers.providers.TransactionReceipt;
 
   private readonly replacedTxReceipt?: ethers.providers.TransactionReceipt;
@@ -16,11 +18,13 @@ class MockTransaction implements TransactionResponseLike {
     replacedTxReceipt?: ethers.providers.TransactionReceipt,
     shouldReplace?: boolean,
     error?: Error,
+    sleepIntervalMs?: number,
   ) {
     this.error = error;
     this.originalTxReceipt = originalTxReceipt;
     this.replacedTxReceipt = replacedTxReceipt;
     this.shouldReplace = shouldReplace || false;
+    this.sleepIntervalMs = sleepIntervalMs;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -33,6 +37,13 @@ class MockTransaction implements TransactionResponseLike {
         return Promise.reject(error);
       }
       return Promise.reject(this.error);
+    }
+    if (this.sleepIntervalMs) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(this.originalTxReceipt);
+        }, this.sleepIntervalMs);
+      });
     }
     return Promise.resolve(this.originalTxReceipt);
   }
@@ -115,6 +126,21 @@ test('test waitTransaction', async () => {
     status: 0,
   } as ethers.providers.TransactionReceipt);
   await expect(waitTransaction(case4)).rejects.toThrow(new Error('transaction failed'));
+});
+
+test('test waitTransaction with timeout', async () => {
+  const mockTransaction = new MockTransaction(
+    {
+      transactionHash: '0x663acbbce78801a4c36ee54291e08f40a4831e6246cbf00c761727d60c0efb23',
+    } as ethers.providers.TransactionReceipt,
+    undefined,
+    false,
+    undefined,
+    3000,
+  );
+  await expect(waitTransaction(mockTransaction, undefined, 10)).rejects.toThrow(
+    new Error('timeout after 10 ms'),
+  );
 });
 
 test('test waitTransactionHash', async () => {

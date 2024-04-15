@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
 import { EtherError } from './error';
+import { promiseWithTimeout } from './promise';
 
 function handleTransactionReceipt(
   receiptPromise: Promise<ethers.providers.TransactionReceipt>,
@@ -27,7 +28,11 @@ export interface TransactionResponseLike {
 export function waitTransaction(
   txResponse: TransactionResponseLike,
   confirmations?: number,
+  timeoutMs?: number,
 ): Promise<ethers.providers.TransactionReceipt> {
+  if (timeoutMs) {
+    return promiseWithTimeout(handleTransactionReceipt(txResponse.wait(confirmations)), timeoutMs);
+  }
   return handleTransactionReceipt(txResponse.wait(confirmations));
 }
 
