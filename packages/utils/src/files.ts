@@ -3,13 +3,18 @@ import pako from 'pako';
 import * as fastfile from '@mystikonetwork/fastfile';
 import { check } from './check';
 
-function readRawFile(path: string, cacheSize?: number, pageSize?: number): Promise<Buffer> {
+async function readRawFile(
+  path: string,
+  cacheSize?: number,
+  pageSize?: number,
+  downloadEventListener?: (progressEvent: any) => void,
+): Promise<Buffer> {
   if (path.startsWith('http') || path.startsWith('https')) {
-    return axios({
-      url: path,
-      method: 'get',
+    const resp = await axios.get(path, {
       responseType: 'arraybuffer',
-    }).then((resp) => Buffer.from(resp.data));
+      onDownloadProgress: downloadEventListener,
+    });
+    return Buffer.from(resp.data);
   }
   return fastfile.readExisting(path, cacheSize, pageSize).then((fd: any) =>
     fd.read(fd.totalSize).then((data: any) => {
@@ -19,27 +24,32 @@ function readRawFile(path: string, cacheSize?: number, pageSize?: number): Promi
   );
 }
 
-function readFileRecursively(
+async function readFileRecursively(
   possiblePaths: string[],
   index: number,
   cacheSize?: number,
   pageSize?: number,
   isCompressed?: (path: string) => boolean,
+  downloadEventListener?: (progressEvent: any) => void,
 ): Promise<Buffer> {
   const path = possiblePaths[index];
-  return readRawFile(path, cacheSize, pageSize)
-    .then((data) => {
-      if (isCompressed && isCompressed(path)) {
-        return Buffer.from(pako.inflate(data));
-      }
-      return data;
-    })
-    .catch((error: any) => {
-      if (possiblePaths.length > index + 1) {
-        return readFileRecursively(possiblePaths, index + 1, cacheSize, pageSize);
-      }
-      return Promise.reject(error);
-    });
+  const data = await readRawFile(path, cacheSize, pageSize, downloadEventListener).catch((error: any) => {
+    if (possiblePaths.length > index + 1) {
+      return readFileRecursively(
+        possiblePaths,
+        index + 1,
+        cacheSize,
+        pageSize,
+        isCompressed,
+        downloadEventListener,
+      );
+    }
+    return Promise.reject(error);
+  });
+  if (isCompressed && isCompressed(path)) {
+    return Buffer.from(pako.inflate(data));
+  }
+  return data;
 }
 
 /**
@@ -49,6 +59,7 @@ function readFileRecursively(
  * @param {number|undefined} [cacheSize] cache size for this file.
  * @param {number|undefined} [pageSize] page size for this file.
  * @param {function} [isCompressed] function to check whether the file is a compressed file.
+ * @param {function} [downloadEventListener] function to listen download event.
  * @returns {Promise<Buffer>} check {@link https://nodejs.org/api/buffer.html Node.js Buffer}
  */
 export function readFile(
@@ -56,10 +67,11 @@ export function readFile(
   cacheSize?: number,
   pageSize?: number,
   isCompressed?: (path: string) => boolean,
+  downloadEventListener?: (progressEvent: any) => void,
 ): Promise<Buffer> {
   const possiblePaths = path instanceof Array ? path : [path];
   check(possiblePaths.length > 0, 'path cannot be empty');
-  return readFileRecursively(possiblePaths, 0, cacheSize, pageSize, isCompressed);
+  return readFileRecursively(possiblePaths, 0, cacheSize, pageSize, isCompressed, downloadEventListener);
 }
 
 /**
@@ -68,14 +80,16 @@ export function readFile(
  * @param {string|string[]} path file's path, it could be a URL or a file system path.
  * @param {number|undefined} [cacheSize] cache size for this file.
  * @param {number|undefined} [pageSize] page size for this file.
+ * @param {function} [downloadEventListener] function to listen download event.
  * @returns {Object} decompressed file if the path is ended with gz, otherwise it returns original file.
  */
 export function readCompressedFile(
   path: string | string[],
   cacheSize?: number,
   pageSize?: number,
+  downloadEventListener?: (progressEvent: any) => void,
 ): Promise<Buffer> {
-  return readFile(path, cacheSize, pageSize, (p) => p.endsWith('.gz'));
+  return readFile(path, cacheSize, pageSize, (p) => p.endsWith('.gz'), downloadEventListener);
 }
 
 /**
@@ -84,13 +98,15 @@ export function readCompressedFile(
  * @param {string|string[]} path file's path, it could be a URL or a file system path.
  * @param {number|undefined} [cacheSize] cache size for this file.
  * @param {number|undefined} [pageSize] page size for this file.
+ * @param {function} [downloadEventListener] function to listen download event.
  * @returns {Object} parsed JSON object.
  */
 export async function readJsonFile(
   path: string | string[],
   cacheSize?: number,
   pageSize?: number,
+  downloadEventListener?: (progressEvent: any) => void,
 ): Promise<any> {
-  const data = await readCompressedFile(path, cacheSize, pageSize);
+  const data = await readCompressedFile(path, cacheSize, pageSize, downloadEventListener);
   return JSON.parse(data.toString());
 }
