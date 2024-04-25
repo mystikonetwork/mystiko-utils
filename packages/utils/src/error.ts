@@ -8,6 +8,7 @@ export interface EtherError {
   code?: string | number;
   data?: { code: number; message: string };
   receipt?: ethers.providers.TransactionReceipt;
+  cancelled?: boolean;
 }
 
 /**

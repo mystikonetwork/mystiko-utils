@@ -14,7 +14,11 @@ function handleTransactionReceipt(
     })
     .catch((error: Error) => {
       const etherError = error as EtherError;
-      if (etherError.code === ethers.errors.TRANSACTION_REPLACED && etherError.receipt) {
+      if (
+        etherError.code === ethers.errors.TRANSACTION_REPLACED &&
+        etherError.receipt &&
+        !etherError.cancelled
+      ) {
         return Promise.resolve(etherError.receipt);
       }
       return Promise.reject(error);
