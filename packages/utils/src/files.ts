@@ -58,12 +58,13 @@ async function readFileRecursively(
           pageSize,
           isCompressed,
           downloadEventListener,
+          checksum,
         );
       }
       return Promise.reject(error);
     },
   );
-  if (isCompressed && isCompressed(path)) {
+  if (index === 0 && isCompressed && isCompressed(path)) {
     return Buffer.from(pako.inflate(data));
   }
   return data;
