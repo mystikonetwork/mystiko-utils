@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import pako from 'pako';
+import { sha512 } from 'js-sha512';
 import { readCompressedFile, readFile, readJsonFile } from '../src';
 
 test('Test readFile', async () => {
@@ -14,9 +15,21 @@ test('Test readCompressedFile', async () => {
   const uncompressedFile = path.join(os.tmpdir(), 'uncompressed.txt');
   const compressedFile = path.join(os.tmpdir(), 'compressed.gz');
   fs.writeFileSync(uncompressedFile, 'hello world');
-  fs.writeFileSync(compressedFile, pako.deflate('hello world'));
-  expect((await readCompressedFile(uncompressedFile)).toString()).toBe('hello world');
-  expect((await readCompressedFile(compressedFile)).toString()).toBe('hello world');
+  const compressedData = pako.deflate('hello world');
+  fs.writeFileSync(compressedFile, compressedData);
+  expect(
+    (
+      await readCompressedFile(uncompressedFile, undefined, undefined, undefined, sha512.hex('hello world'))
+    ).toString(),
+  ).toBe('hello world');
+  expect(
+    (
+      await readCompressedFile(compressedFile, undefined, undefined, undefined, sha512.hex(compressedData))
+    ).toString(),
+  ).toBe('hello world');
+  await expect(
+    readCompressedFile(compressedFile, undefined, undefined, undefined, 'wrong checksum'),
+  ).rejects.toThrow();
   fs.rmSync(tmpDir, { recursive: true });
 });
 
