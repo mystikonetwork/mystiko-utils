@@ -11,6 +11,7 @@ import { DefaultRetryPolicy, RetryPolicy } from './retry';
 import { AxiosInstance } from 'axios';
 import { Logger, LogLevelDesc } from 'loglevel';
 import { checkDefinedAndNotNull, logger as rootLogger } from '@mystikonetwork/utils';
+import {EthPriceResponse} from "./response";
 
 export interface EventLogsFetchResponse {
   finalToBlock: number;
@@ -42,6 +43,8 @@ export interface EtherFetcher {
   getTransactionByHash(transactionHash: string): Promise<ethers.providers.TransactionResponse>;
 
   getTransactionReceipt(transactionHash: string): Promise<ethers.providers.TransactionReceipt>;
+
+  getEthPriceInUSD(): Promise<number>;
 }
 
 export type ScanApiEtherFetcherOptions = {
@@ -135,6 +138,17 @@ export class ScanApiEtherFetcher implements EtherFetcher {
     paramsMap.set('apikey', this.apiKey);
     return this.jsonRpcProxy(paramsMap).then((blockNumber: number) => {
       return BigNumber.from(blockNumber).toNumber();
+    });
+  }
+
+  // only support by etherscan, other chain explorer not support
+  public async getEthPriceInUSD(): Promise<number> {
+    const paramsMap = new Map();
+    paramsMap.set('action', 'ethprice');
+    paramsMap.set('module', 'stats');
+    paramsMap.set('apikey', this.apiKey);
+    return this.jsonRpcProxy(paramsMap).then((ethPrice: EthPriceResponse) => {
+      return ethPrice.ethusd;
     });
   }
 
@@ -249,6 +263,10 @@ export class ProviderEtherFetcher implements EtherFetcher {
     });
   }
 
+  public async getEthPriceInUSD(): Promise<number> {
+   return Promise.reject(new Error('getEthPriceInUSD is not implemented'));
+  }
+
   public async getBlockByNumber(blockNumber: number): Promise<ethers.providers.Block> {
     return this.provider.getBlock(BigNumber.from(blockNumber).toNumber());
   }
@@ -334,6 +352,10 @@ export class FailoverEtherFetcher implements EtherFetcher {
           return BigNumber.from(blockNumber).toNumber();
         });
       });
+  }
+
+  public async getEthPriceInUSD(): Promise<number> {
+    return this.scanApiFetcher.getEthPriceInUSD();
   }
 
   public async getBlockByNumber(blockNumber: number): Promise<ethers.providers.Block> {
