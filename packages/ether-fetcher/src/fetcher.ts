@@ -141,6 +141,7 @@ export class ScanApiEtherFetcher implements EtherFetcher {
     });
   }
 
+  // only support by etherscan, other chain explorer not support
   public async getEthPriceInUSD(): Promise<number> {
     const paramsMap = new Map();
     paramsMap.set('action', 'ethprice');
