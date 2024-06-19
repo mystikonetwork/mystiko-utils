@@ -119,6 +119,20 @@ describe('test fetchers', () => {
   getBlockNumberParams.set('module', 'proxy');
   const getBlocknumberQueryString = wrapParamsQueryString(getBlockNumberParams);
 
+  const getEthPrceParma= new Map<string, any>();
+  getEthPrceParma.set('action', 'ethprice');
+  getEthPrceParma.set('apikey', apikey);
+  getEthPrceParma.set('module', 'stats');
+  const getEthPrceQueryString = wrapParamsQueryString(getEthPrceParma);
+  const mockedEthPriceResp = {
+    status: '1',
+    result: {
+      ethusd: '3557.70805331512',
+      ethusdTimestamp:'1718779322',
+      ethbtc: '0.0542816866781346',
+    },
+  }
+
   const getBlockByNumberParams = new Map<string, any>();
   getBlockByNumberParams.set('action', 'eth_getBlockByNumber');
   getBlockByNumberParams.set('apikey', apikey);
@@ -230,6 +244,10 @@ describe('test fetchers', () => {
       });
     const blockNumber = await scanApiEtherFetcher.getBlockNumber();
     expect(blockNumber).toEqual(mockedBlockNumber);
+    // test getEthPrice
+    nock('http://localhost:1111').get(`/api?${getEthPrceQueryString}`).reply(200, mockedEthPriceResp);
+    const ethPriceResp = await scanApiEtherFetcher.getEthPriceInUSD();
+    expect(ethPriceResp).toEqual(mockedEthPriceResp.result.ethusd);
     // test getBlockByNumber
     nock('http://localhost:1111').get(`/api?${getBlockByNumberQueryString}`).reply(200, mockedBlockResp);
     const blockResp = await scanApiEtherFetcher.getBlockByNumber(mockedBlockNumber);
