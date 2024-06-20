@@ -20,7 +20,7 @@ export const DEFAULT_MAINNET_ARBITRUM_ONE_API_BASE_URL = 'https://api.arbiscan.i
 
 export const DEFAULT_MAINNET_OPTIMISM_API_BASE_URL = 'https://api-optimistic.etherscan.io';
 
-export const DEFAULT_TESTNET_GOERLI_API_BASE_URL = 'https://api-goerli.etherscan.io';
+export const DEFAULT_TESTNET_SEPOLIA_API_BASE_URL = 'https://api-sepolia.etherscan.io';
 
 export const DEFAULT_TESTNET_BSC_API_BASE_URL = 'https://api-testnet.bscscan.com';
 
@@ -33,11 +33,11 @@ export const DEFAULT_TESTNET_FANTOM_API_BASE_URL = 'https://api-testnet.ftmscan.
 
 export const DEFAULT_TESTNET_MOONBASE_ALPHA_API_BASE_URL = 'https://api-moonbase.moonscan.io';
 
-export const DEFAULT_TESTNET_BASE_GOERLI_API_BASE_URL = 'https://api-goerli.basescan.org';
+export const DEFAULT_TESTNET_BASE_SEPOLIA_API_BASE_URL = 'https://api-sepolia.basescan.org';
 
-export const DEFAULT_TESTNET_ARBITRUM_GOERLI_API_BASE_URL = 'https://api-goerli.arbiscan.io';
+export const DEFAULT_TESTNET_ARBITRUM_SEPOLIA_API_BASE_URL = 'https://api-sepolia.arbiscan.io';
 
-export const DEFAULT_TESTNET_OPTIMISM_GOERLI_API_BASE_URL = 'https://api-goerli-optimistic.etherscan.io';
+export const DEFAULT_TESTNET_OPTIMISM_SEPOLIA_API_BASE_URL = 'https://api-sepolia-optimistic.etherscan.io';
 
 export interface ScanApiEventLogParams {
   module: string;
@@ -71,8 +71,8 @@ export function getDefaultScanApiBaseUrl(chainId: number): string {
       return DEFAULT_MAINNET_ARBITRUM_ONE_API_BASE_URL;
     case 10:
       return DEFAULT_MAINNET_OPTIMISM_API_BASE_URL;
-    case 5:
-      return DEFAULT_TESTNET_GOERLI_API_BASE_URL;
+    case 11155111:
+      return DEFAULT_TESTNET_SEPOLIA_API_BASE_URL;
     case 97:
       return DEFAULT_TESTNET_BSC_API_BASE_URL;
     case 80001:
@@ -83,12 +83,12 @@ export function getDefaultScanApiBaseUrl(chainId: number): string {
       return DEFAULT_TESTNET_FANTOM_API_BASE_URL;
     case 1287:
       return DEFAULT_TESTNET_MOONBASE_ALPHA_API_BASE_URL;
-    case 84531:
-      return DEFAULT_TESTNET_BASE_GOERLI_API_BASE_URL;
-    case 421613:
-      return DEFAULT_TESTNET_ARBITRUM_GOERLI_API_BASE_URL;
-    case 420:
-      return DEFAULT_TESTNET_OPTIMISM_GOERLI_API_BASE_URL;
+    case 84532:
+      return DEFAULT_TESTNET_BASE_SEPOLIA_API_BASE_URL;
+    case 421614:
+      return DEFAULT_TESTNET_ARBITRUM_SEPOLIA_API_BASE_URL;
+    case 11155420:
+      return DEFAULT_TESTNET_OPTIMISM_SEPOLIA_API_BASE_URL;
     default:
       throw new Error(`Invalid chain id`);
   }
