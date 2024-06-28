@@ -11,7 +11,7 @@ import { DefaultRetryPolicy, RetryPolicy } from './retry';
 import { AxiosInstance } from 'axios';
 import { Logger, LogLevelDesc } from 'loglevel';
 import { checkDefinedAndNotNull, logger as rootLogger } from '@mystikonetwork/utils';
-import {EthPriceResponse} from "./response";
+import { EthPriceResponse } from './response';
 
 export interface EventLogsFetchResponse {
   finalToBlock: number;
@@ -45,6 +45,8 @@ export interface EtherFetcher {
   getTransactionReceipt(transactionHash: string): Promise<ethers.providers.TransactionReceipt>;
 
   getEthPriceInUSD(): Promise<number>;
+
+  getGasPrice(): Promise<BigNumber>;
 }
 
 export type ScanApiEtherFetcherOptions = {
@@ -149,6 +151,15 @@ export class ScanApiEtherFetcher implements EtherFetcher {
     paramsMap.set('apikey', this.apiKey);
     return this.jsonRpcProxy(paramsMap).then((ethPrice: EthPriceResponse) => {
       return ethPrice.ethusd;
+    });
+  }
+
+  public async getGasPrice(): Promise<BigNumber> {
+    const paramsMap = new Map();
+    paramsMap.set('action', 'eth_gasPrice');
+    paramsMap.set('apikey', this.apiKey);
+    return this.jsonRpcProxy(paramsMap).then((gasPrice: string) => {
+      return BigNumber.from(gasPrice);
     });
   }
 
@@ -264,7 +275,11 @@ export class ProviderEtherFetcher implements EtherFetcher {
   }
 
   public async getEthPriceInUSD(): Promise<number> {
-   return Promise.reject(new Error('getEthPriceInUSD is not implemented'));
+    return Promise.reject(new Error('getEthPriceInUSD is not implemented'));
+  }
+
+  public async getGasPrice(): Promise<BigNumber> {
+    return this.provider.getGasPrice();
   }
 
   public async getBlockByNumber(blockNumber: number): Promise<ethers.providers.Block> {
@@ -356,6 +371,24 @@ export class FailoverEtherFetcher implements EtherFetcher {
 
   public async getEthPriceInUSD(): Promise<number> {
     return this.scanApiFetcher.getEthPriceInUSD();
+  }
+
+  public async getGasPrice(): Promise<BigNumber> {
+    return this.scanApiFetcher.getGasPrice().then(
+      (gasPrice: BigNumber) => {
+        checkDefinedAndNotNull(
+          gasPrice,
+          `getGasPrice response from ScanApiFetcher is null or undefined, gasPrice: ${gasPrice}`,
+        );
+        return gasPrice;
+      },
+      async (error) => {
+        this.logger.info(
+          `getGasPrice raise error: ${JSON.stringify(error)}, will fallback to ProviderFetcher.`,
+        );
+        return this.providerFetcher.getGasPrice();
+      },
+    );
   }
 
   public async getBlockByNumber(blockNumber: number): Promise<ethers.providers.Block> {

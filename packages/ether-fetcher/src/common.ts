@@ -151,7 +151,7 @@ export async function httpGetFetchEventLogs(
 }
 
 export async function httpGetEtherProxy(axios: AxiosInstance, paramsMap: Map<string, any>): Promise<any> {
-  if (!paramsMap.has('module')){
+  if (!paramsMap.has('module')) {
     paramsMap.set('module', 'proxy');
   }
   const queryString = wrapParamsQueryString(paramsMap);
