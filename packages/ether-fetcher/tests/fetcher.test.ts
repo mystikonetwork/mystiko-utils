@@ -49,6 +49,10 @@ class TestProvider extends ethers.providers.BaseProvider {
     return Promise.resolve(10556486);
   }
 
+  public async getGasPrice(): Promise<BigNumber> {
+    return Promise.resolve(BigNumber.from(1500000000));
+  }
+
   public async getBlock(blockNumber: number): Promise<any> {
     return Promise.resolve({
       difficulty: '0x2',
@@ -119,7 +123,7 @@ describe('test fetchers', () => {
   getBlockNumberParams.set('module', 'proxy');
   const getBlocknumberQueryString = wrapParamsQueryString(getBlockNumberParams);
 
-  const getEthPrceParma= new Map<string, any>();
+  const getEthPrceParma = new Map<string, any>();
   getEthPrceParma.set('action', 'ethprice');
   getEthPrceParma.set('apikey', apikey);
   getEthPrceParma.set('module', 'stats');
@@ -128,10 +132,20 @@ describe('test fetchers', () => {
     status: '1',
     result: {
       ethusd: '3557.70805331512',
-      ethusdTimestamp:'1718779322',
+      ethusdTimestamp: '1718779322',
       ethbtc: '0.0542816866781346',
     },
-  }
+  };
+  const getGasPriceParams = new Map<string, any>();
+  getGasPriceParams.set('action', 'eth_gasPrice');
+  getGasPriceParams.set('apikey', apikey);
+  getGasPriceParams.set('module', 'proxy');
+  const getGasPriceQueryString = wrapParamsQueryString(getGasPriceParams);
+  const mockedGasPriceResp = {
+    jsonrpc: '2.0',
+    id: 73,
+    result: '0x15e1fbfd0',
+  };
 
   const getBlockByNumberParams = new Map<string, any>();
   getBlockByNumberParams.set('action', 'eth_getBlockByNumber');
@@ -248,6 +262,10 @@ describe('test fetchers', () => {
     nock('http://localhost:1111').get(`/api?${getEthPrceQueryString}`).reply(200, mockedEthPriceResp);
     const ethPriceResp = await scanApiEtherFetcher.getEthPriceInUSD();
     expect(ethPriceResp).toEqual(mockedEthPriceResp.result.ethusd);
+    // test getGasPrice
+    nock('http://localhost:1111').get(`/api?${getGasPriceQueryString}`).reply(200, mockedGasPriceResp);
+    const gasPriceResp = await scanApiEtherFetcher.getGasPrice();
+    expect(gasPriceResp).toEqual(BigNumber.from(mockedGasPriceResp.result));
     // test getBlockByNumber
     nock('http://localhost:1111').get(`/api?${getBlockByNumberQueryString}`).reply(200, mockedBlockResp);
     const blockResp = await scanApiEtherFetcher.getBlockByNumber(mockedBlockNumber);
@@ -378,6 +396,8 @@ describe('test fetchers', () => {
     expect(fetcher.getProvider()).toBe(provider2);
     const blockNumber = await fetcher.getBlockNumber();
     expect(blockNumber).toEqual(mockedBlockNumber);
+    const gasPrice = await fetcher.getGasPrice();
+    expect(gasPrice).toEqual(BigNumber.from('1500000000'));
     const block = await fetcher.getBlockByNumber(mockedBlockNumber);
     expect(block.number).toEqual(mockedBlockNumber);
     const transaction = await fetcher.getTransactionByHash('0x111');
@@ -417,6 +437,8 @@ describe('test fetchers', () => {
         id: 83,
         result: BigNumber.from(mockedBlockNumber).toHexString(),
       });
+    nock('http://localhost:3333').get(`/api?${getEthPrceQueryString}`).reply(200, mockedEthPriceResp);
+    nock('http://localhost:3333').get(`/api?${getGasPriceQueryString}`).reply(200, mockedGasPriceResp);
     nock('http://localhost:3333').get(`/api?${getBlockByNumberQueryString}`).reply(200, mockedBlockResp);
     nock('http://localhost:3333')
       .get(`/api?${getTransactionByHashQueryString}`)
@@ -438,6 +460,10 @@ describe('test fetchers', () => {
     expect(blockNumber).toEqual(mockedBlockNumber);
     let block = await failoverEtherFetcher.getBlockByNumber(mockedBlockNumber);
     expect(block.number).toEqual(BigNumber.from(mockedBlockNumber).toHexString());
+    const ethPriceResp = await failoverEtherFetcher.getEthPriceInUSD();
+    expect(ethPriceResp).toEqual(mockedEthPriceResp.result.ethusd);
+    let gasPriceResp = await failoverEtherFetcher.getGasPrice();
+    expect(gasPriceResp).toEqual(BigNumber.from(mockedGasPriceResp.result));
     let transactionResp = await failoverEtherFetcher.getTransactionByHash('0x111');
     expect(transactionResp).toEqual(mockedTransactionResp.result);
     let transactionReceiptResp = await failoverEtherFetcher.getTransactionReceipt('0x111');
@@ -459,6 +485,8 @@ describe('test fetchers', () => {
     expect(blockNumber).toEqual(mockedBlockNumber);
     block = await failoverEtherFetcher2.getBlockByNumber(mockedBlockNumber);
     expect(block.number).toEqual(mockedBlockNumber);
+    gasPriceResp = await failoverEtherFetcher2.getGasPrice();
+    expect(gasPriceResp).toEqual(BigNumber.from('1500000000'));
     transactionResp = await failoverEtherFetcher2.getTransactionByHash('0x111');
     expect(transactionResp.hash).toEqual('0x111');
     transactionReceiptResp = await failoverEtherFetcher2.getTransactionReceipt('0x111');
