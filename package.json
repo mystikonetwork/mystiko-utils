@@ -1,19 +1,12 @@
 {
   "name": "mystiko-utils",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Typescript utility helpers of Mystiko.Network",
   "private": true,
   "repository": "https://github.com/mystikonetwork/mystiko-utils",
   "author": "Fitch",
   "license": "MIT",
-  "scripts": {
-    "bootstrap": "lerna bootstrap",
-    "build": "lerna run build",
-    "lint": "lerna run lint",
-    "test": "lerna run test",
-    "deploy": "lerna run deploy"
-  },
-  "devDependencies": {
-    "lerna": "^3.20.2"
-  }
+  "workspaces": [
+    "packages/*"
+  ]
 }

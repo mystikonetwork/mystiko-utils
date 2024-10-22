@@ -1,7 +1,7 @@
 import { promisesSequentially, promiseWithTimeout, TimeoutError } from '../src';
 
 test('test promiseWithTimeout', async () => {
-  let timer: NodeJS.Timer | undefined;
+  let timer: NodeJS.Timeout | undefined;
   const promise = new Promise((resolve) => {
     timer = setTimeout(resolve, 3000);
   });

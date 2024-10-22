@@ -1,7 +1,7 @@
 export class TimeoutError extends Error {}
 
 export function promiseWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  let timer: NodeJS.Timer | undefined;
+  let timer: NodeJS.Timeout | undefined;
   const timeoutPromise = new Promise((resolve) => {
     timer = setTimeout(resolve, timeoutMs);
   }).then(() => Promise.reject(new TimeoutError(`timeout after ${timeoutMs} ms`)));
